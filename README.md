@@ -1,2 +1,2 @@
 # cpu_slow
-Not a fast CPU
+Not a slow CPU
