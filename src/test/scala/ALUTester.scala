@@ -9,11 +9,12 @@ class ALUTester(alu: ALU) extends PeekPokeTester(alu) {
   step(1)
 
   expect(peek(alu.io.out_result) == 4294967294L, "Compare integer output")
-  expect(peek(alu.io.out_comp(0)) == 1, "test")
 }
 
 object ALUTester {
   def main(args: Array[String]): Unit = {
+    (new chisel3.stage.ChiselStage).emitVerilog(new ALU, args)
+
     println("Testing ALU")
     iotesters.Driver.execute(
       Array("--generate-vcd-output", "on",

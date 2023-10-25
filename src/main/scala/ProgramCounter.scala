@@ -10,6 +10,15 @@ class ProgramCounter extends Module {
     val programCounter = Output(UInt(16.W))
   })
 
-  //Implement this module here (respect the provided interface, since it used by the tester)
+  private var pcReg: UInt = RegInit(0.U(16.W));
 
+  when(!io.stop && io.run && io.jump) {
+    pcReg := io.programCounterJump;
+  }
+
+  when(!io.stop && !io.jump && io.run) {
+    pcReg := pcReg + 1.U(16.W)
+  }
+
+  io.programCounter := pcReg
 }
