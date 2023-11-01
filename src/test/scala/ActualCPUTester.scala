@@ -3,10 +3,7 @@ import chisel3.iotesters.PeekPokeTester
 
 class ActualCPUTester(dut: CPUTop) extends PeekPokeTester(dut) {
   val program = Array(
-    2147483658L,
-    402653199L,
-    2214592527L,
-    339804160L,
+    2147483753L,
     1L,
   )
 
@@ -27,7 +24,7 @@ class ActualCPUTester(dut: CPUTop) extends PeekPokeTester(dut) {
   var steps = 0
   val maxSteps = 20000
 
-  while (0 == peek(dut.io.done)) {
+  while (0 == peek(dut.io.done) && steps <= maxSteps) {
     steps += 1
     step(1)
   }

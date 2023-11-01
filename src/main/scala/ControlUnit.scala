@@ -30,9 +30,13 @@ class ControlUnit extends Module {
 
     // Interface with ALU
     val aluSel = Output(UInt(5.W))
+    val aluSigned = Output(Bool())
     val aluInA = Output(UInt(32.W))
     val aluInB = Output(UInt(32.W))
+    val aluInASigned = Output(SInt(32.W))
+    val aluInBSigned = Output(SInt(32.W))
     val aluOut = Input(UInt(32.W))
+    val aluOutSigned = Input(SInt(32.W))
     val aluComp = Input(Vec(5, Bool()))
     val aluCompOut0 = Input(Vec(5, Bool()))
     // Debug
@@ -65,10 +69,13 @@ class ControlUnit extends Module {
   io.regWriteEnable := 0.B
 
   io.aluSel := 0.U
+  io.aluSigned := 0.B
 
   // Always point register A and B from registerFile into ALU
   io.aluInA := io.regA
   io.aluInB := io.regB
+  io.aluInASigned := io.regA.asSInt()
+  io.aluInBSigned := io.regB.asSInt()
 
   // SET instruction
   // 1dddddxxxxxxxxxxxxxxxxxxxxxxxxxx    set register = d, value = x
@@ -80,7 +87,9 @@ class ControlUnit extends Module {
 
   when(io.instruction(31, 30) === "b01".U) {
     /* ALU INSTRUCTIONS */
-    io.aluSel := io.instruction(29, 24)
+    val is_signed = io.instruction(29).asBool()
+    io.aluSigned := is_signed
+    io.aluSel := io.instruction(28, 24)
     io.regWriteSel := io.instruction(23, 19)
 
     io.regWriteEnable := 1.B
@@ -93,8 +102,7 @@ class ControlUnit extends Module {
     flags(3) := io.aluCompOut0(3)
     flags(4) := io.aluCompOut0(4)
 
-    io.regWriteData := io.aluOut
-
+    io.regWriteData := Mux(is_signed, io.aluOutSigned.asUInt(), io.aluOut)
   }
 
   when(io.instruction(31, 29) === "b001".U) {
@@ -179,7 +187,10 @@ class ControlUnit extends Module {
   when(io.instruction(31, 27) === "b00001".U) {
     /* TEST / CMP */
     // Get first register (required for both)
-    val regsel1 = io.instruction(25, 21)
+    val is_signed = io.instruction(25)
+    val regsel1 = io.instruction(24, 20)
+
+    io.aluSigned := is_signed
 
     // Read from that
     io.regSelA := regsel1
@@ -201,7 +212,7 @@ class ControlUnit extends Module {
       // CMP reg, reg
       is(1.B) {
         // Second register
-        io.regSelB := io.instruction(20, 16)
+        io.regSelB := io.instruction(19, 15)
         flags(0) := io.aluComp(0)
         flags(1) := io.aluComp(1)
         flags(2) := io.aluComp(2)

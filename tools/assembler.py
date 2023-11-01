@@ -1,107 +1,145 @@
-def assemble_instruction(instruction: str):
-    # Strip everything after ; (comments)
-    instruction = instruction.split(";")[0].strip()
+from typing import List
 
-    tokens = instruction.split()
-
-    tokens[0] = tokens[0].lower()
-
-
-    jump_map = {
-        "je": 0, "jg": 2, "jl": 4,
-        "jge": 2, "jle": 5, "jne": 6, "jmp": 7
-    }
-
-
-    op_map = {
-        "~": -1, "&": 1, "|": 2, "^": 3, "+": 4, "-": 5,
-        "/": 5, "%": 7, "*": 8, ">>": 9, "<<": 10
-    }
-
-    if tokens[0] == "set":
-        d = int(tokens[1])
-        x = int(tokens[2])
-        return (1 << 31) | (d << 26) | x
-
-    elif tokens[0] == "alu":
-
-        op = op_map[tokens[1]]
-        d = int(tokens[2])
-        a = int(tokens[3])
-        b = int(tokens[4])
-        return (1 << 30) | (op << 24) | (d << 19) | (a << 14) | (b << 9)
-
-    elif "j" in tokens[0]:  # Jump instructions
-        x = 0
-        reg = 0
-
-        if tokens[0].startswith("r"):
-            tokens[0] = tokens[0].removeprefix("r")
-            reg = int(tokens[1])
-        else:
-            x = int(tokens[1])
-
-        cond = jump_map[tokens[0]]
-
-        return (1 << 29) | (cond << 26) | (bool(reg) << 25) | reg << 20 | x
-
-    elif tokens[0] == "load":
-        d = int(tokens[1])
-        x = int(tokens[2])
-        return (1 << 28) | (d << 21) | x
-
-    elif tokens[0] == "rload":
-        d = int(tokens[1])
-        s = int(tokens[2])
-
-        return (1 << 28) | (1 << 26) | (d << 21) | (s << 16)
-
-
-    elif tokens[0] == "store":
-        d = int(tokens[1])
-        x = int(tokens[2])
-
-        return (3 << 27) | (d << 21) | x
-
-    elif tokens[0] == "rstore":
-        d = int(tokens[1])
-        s = int(tokens[2])
-
-        return (3 << 27) | (1 << 26) | (d << 21) | (s << 16)
-
-    elif tokens[0] == "test":
-        d = int(tokens[1])
-
-        return (1 << 27) | (d << 21)
-
-    elif tokens[0] == "cmp":
-        a = int(tokens[1])
-        b = int(tokens[2])
-
-        return (3 << 26) | (a << 21) | (b << 16)
-
-    elif tokens[0] == "halt":
-        return (1 << 0)
-
-    elif tokens[0] == "nop":
-        return (0 << 0)
-
+def parse_literal(l: str, bit_size = 26) -> int:
+    if '0x' in l:
+        integer = int(l.replace('0x',''), 16)
+    elif '0b' in l:
+        integer = int(l.replace('0b',''), 2)
+    elif '0o' in l:
+        integer = int(l.replace('0o',''), 8)
     else:
-        raise ValueError(f"Unknown instruction: {tokens[0]}")
+        integer = int(l)
 
-def assemble_program(program):
-    instructions = program.strip().split('\n')
-    machine_code = [assemble_instruction(instr) for instr in instructions]
+    max_size = (1 << bit_size) - 1  # Maximum allowed size for the given bit length
+
+    if integer > max_size or integer < -max_size:
+        raise ValueError(f"Integer {integer} is out of range for {bit_size} bits!")
+
+    # If the number is negative, convert to unsigned binary representation
+    if integer < 0:
+        integer = int.from_bytes(integer.to_bytes(bit_size // 8, 'big', signed=True), 'big', signed=False)
+
+    return integer
+
+
+def reg_to_bin(reg_str):
+    return int(reg_str[1:])
+
+def is_register(val):
+    """Check if the value represents a register."""
+    return val.startswith('r') or val.startswith('R')
+
+def alu_op_to_bin(op_str: str):
+    op_str = op_str.lower().removesuffix('u')
+
+    
+    ops = {
+        'not': 0,
+        'and': 1,
+        'or': 2,
+        'xor': 3,
+        'add': 4,
+        'sub': 5,
+        'div': 6,
+        'mod': 7,
+        'mul': 8,
+        'shr': 9,
+        'shl': 10
+    }
+    return ops[op_str]
+
+def assemble_program(program) -> List[int]:
+    # Remove all comments and empty lines
+    # Support #, ; and //
+    program = [
+        line.split('#')[0].split(';')[0].split('//')[0].strip() for line in program
+    ]
+
+    program = [line for line in program if line]  # Remove empty lines
+
+    print(program)
+
+    # First pass: Collect labels
+    label_address_map = {}
+    instruction_address = 0
+    for line in program:
+        if line.endswith(':'):
+            label = line[:-1]
+            label_address_map[label] = instruction_address
+        else:
+            instruction_address += 1
+
+    # Second pass: Generate machine code
+    machine_code = []
+    for instr in program:
+        if not instr.endswith(':'):  # Skip labels during second pass
+            machine_code.append(assemble_instruction(instr, label_address_map))
+
     return machine_code
 
-# Example usage:
+def assemble_instruction(instr: str, label_address_map) -> int:
+    tokens = instr.split()
+    op = tokens[0].lower()
+    
+    if op == "set":
+        return 1 << 31 | reg_to_bin(tokens[1]) << 26 | parse_literal(tokens[2], 26)
+    
+    elif op.removesuffix('u') in ["not", "add", "sub", "and", "or", "xor", "mul", "div", "mod", "shl", "shr"]:
+        signed_bit = 0 if 'u' in op else 1
+        return 1 << 30 | signed_bit << 29 | alu_op_to_bin(op) << 23 | reg_to_bin(tokens[1]) << 18 | reg_to_bin(tokens[2]) << 13 | reg_to_bin(tokens[3]) << 8
+    
+    elif op in ["jmp", "je", "jne", "jg", "jl", "jge", "jle"]:
+        jump_ops = {
+            "jmp": 7,
+            "je": 1,
+            "jne": 6,
+            "jg": 2,
+            "jl": 4,
+            "jge": 3,
+            "jle": 5
+        }
+
+        op_code = jump_ops[op] << 26
+        flag_bit = 1 if is_register(tokens[1]) else 0
+        
+        if flag_bit:  # If it's a register
+            dest_reg = reg_to_bin(tokens[1]) << 20
+            address = 0        
+        else:  
+            dest_reg = 0
+            if tokens[1] in label_address_map:  # If it's a label
+                address = label_address_map[tokens[1]]
+            else:  # If it's a constant
+                address = parse_literal(tokens[1], 16)
+
+        return 1 << 29 | op_code | flag_bit << 25 | dest_reg | address
+
+    elif op in ["load", "store"]:
+        op_code = 1 << 28 if op == 'load' else 3 << 27
+        dest_reg = reg_to_bin(tokens[1]) << 21
+        flag_bit = 1 if is_register(tokens[2]) else 0
+        addr_reg_or_const = reg_to_bin(tokens[2]) << 16 if flag_bit else parse_literal(tokens[2], 16)
+        return op_code | flag_bit << 26 | dest_reg | addr_reg_or_const
+
+    elif op in ["test", "testu"]:
+        signed_bit = 0 if 'u' in op else 1
+        return 2 << 28 | signed_bit << 26 | reg_to_bin(tokens[1]) << 21
+    
+    elif op in ["cmp", "cmpu"]:
+        signed_bit = 0 if 'u' in op else 1
+        return 3 << 27 | signed_bit << 26 | reg_to_bin(tokens[1]) << 21 | reg_to_bin(tokens[2]) << 16
+    
+    elif op == "halt":
+        return 1
+    
+    else:
+        raise ValueError(f"Unknown instruction: {instr}")
+
+# Test
 program = """
-SET 0 10
-STORE 0 15 ; Store 10 at address 15
-SET 1 15
-RLOAD 2 1 ; Load 10 from address 15 into register 2
+SET r0 -0x69
 HALT
-"""
+""".split("\n")
 
 machine_code = assemble_program(program)
 for code in machine_code:

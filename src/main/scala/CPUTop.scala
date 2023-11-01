@@ -3,20 +3,20 @@ import chisel3.util._
 
 class CPUTop extends Module {
   val io = IO(new Bundle {
-    val done = Output(Bool ())
-    val run = Input(Bool ())
+    val done = Output(Bool())
+    val run = Input(Bool())
     //This signals are used by the tester for loading and dumping the memory content, do not touch
-    val testerDataMemEnable = Input(Bool ())
-    val testerDataMemAddress = Input(UInt (16.W))
-    val testerDataMemDataRead = Output(UInt (32.W))
-    val testerDataMemWriteEnable = Input(Bool ())
-    val testerDataMemDataWrite = Input(UInt (32.W))
+    val testerDataMemEnable = Input(Bool())
+    val testerDataMemAddress = Input(UInt(16.W))
+    val testerDataMemDataRead = Output(UInt(32.W))
+    val testerDataMemWriteEnable = Input(Bool())
+    val testerDataMemDataWrite = Input(UInt(32.W))
     //This signals are used by the tester for loading and dumping the memory content, do not touch
-    val testerProgMemEnable = Input(Bool ())
-    val testerProgMemAddress = Input(UInt (16.W))
-    val testerProgMemDataRead = Output(UInt (32.W))
-    val testerProgMemWriteEnable = Input(Bool ())
-    val testerProgMemDataWrite = Input(UInt (32.W))
+    val testerProgMemEnable = Input(Bool())
+    val testerProgMemAddress = Input(UInt(16.W))
+    val testerProgMemDataRead = Output(UInt(32.W))
+    val testerProgMemWriteEnable = Input(Bool())
+    val testerProgMemDataWrite = Input(UInt(32.W))
   })
 
   //Creating components
@@ -58,14 +58,17 @@ class CPUTop extends Module {
   registerFile.io.in_writeEnable := controlUnit.io.regWriteEnable
 
   // Interface with ALU
+  alu.io.in_signed := controlUnit.io.aluSigned
   alu.io.in_sel := controlUnit.io.aluSel
   alu.io.in_op1 := controlUnit.io.aluInA
   alu.io.in_op2 := controlUnit.io.aluInB
+  alu.io.in_op1_signed := controlUnit.io.aluInASigned
+  alu.io.in_op2_signed := controlUnit.io.aluInBSigned
 
   controlUnit.io.aluOut := alu.io.out_result
+  controlUnit.io.aluOutSigned := alu.io.out_result_signed
   controlUnit.io.aluComp := alu.io.out_comp
   controlUnit.io.aluCompOut0 := alu.io.out_result_comp_0
-
 
   //This signals are used by the tester for loading the program to the program memory, do not touch
   programMemory.io.testerAddress := io.testerProgMemAddress

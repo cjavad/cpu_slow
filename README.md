@@ -6,9 +6,9 @@ set = 1*
 
 1dddddxxxxxxxxxxxxxxxxxxxxxxxxxx set register = d, value = x
 
-alu = 01*
+alu = 01*[s] (Signed is s is 1 otherwise unsigned)
 
-01iiiiiidddddaaaaabbbbb-------- alu op = i, dest = dsource 1 = a, source 2 = b
+01siiiiidddddaaaaabbbbb-------- alu op = i, dest = dsource 1 = a, source 2 = b
 
 jumps = 001*[f], register = d, address = x
 
@@ -30,13 +30,13 @@ otherwise const address is used.
 00010fdddddsssssxxxxxxxxxxxxxxxx load
 00011fdddddsssssxxxxxxxxxxxxxxxx store
 
-test a
+test a, is_signed = s
 
-000010ddddd---------------------
+000010sddddd---------------------
 
-cmp a, b
+cmp a, b, is_signed = s
 
-000011aaaaabbbbb----------------
+000011saaaaabbbbb----------------
 
 halt
 
