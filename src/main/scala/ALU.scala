@@ -12,11 +12,12 @@ class ALU extends Module {
 
     // < = > <= >=
     val out_comp = Output(Vec(5, Bool()))
+    val out_result_comp_0 = Output(Vec(5, Bool()))
   })
 
-  val is_greater = io.in_op1 > io.in_op2
-  val is_lesser = io.in_op1 < io.in_op2
-  val is_equal =  ~(is_lesser | is_greater)
+  private val is_greater = io.in_op1 > io.in_op2
+  private val is_lesser = io.in_op1 < io.in_op2
+  private val is_equal =  ~(is_lesser | is_greater)
 
   io.out_comp(0) := is_lesser
   io.out_comp(1) := is_equal
@@ -24,7 +25,7 @@ class ALU extends Module {
   io.out_comp(3) := is_lesser | is_equal
   io.out_comp(4) := is_greater | is_equal
 
-  io.out_result := 0.U  // Default value assignment
+  io.out_result := 0.U // Default value
 
   //Implement this module here
   switch (io.in_sel) {
@@ -71,6 +72,13 @@ class ALU extends Module {
     is (15.U) {}
   }
 
+  private val is_lesser_0 = io.out_result < 0.U
+  private val is_greater_0 = io.out_result > 0.U
+  private val is_equal_0 = ~(is_lesser_0 | is_greater_0)
 
-
+  io.out_result_comp_0(0) := is_lesser_0
+  io.out_result_comp_0(1) := is_equal_0
+  io.out_result_comp_0(2) := is_greater_0
+  io.out_result_comp_0(3) := is_lesser_0 | is_equal_0
+  io.out_result_comp_0(4) := is_greater_0 | is_equal_0
 }
