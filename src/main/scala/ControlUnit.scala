@@ -145,22 +145,31 @@ class ControlUnit extends Module {
   }
 
   when(io.instruction(31, 28) === "b0001".U) {
-    /* RAM LOAD / STORE OPS  */
-    val regsel = io.instruction(26, 22)
-    val address = io.instruction(15, 0)
-    io.dataMemoryAddress := address
+    /* RAM LOAD / STORE OPS */
+    val op_type = io.instruction(27).asBool()
+    val use_reg = io.instruction(26).asBool()
+    // Load into, or store from.
+    val firstRegSel = io.instruction(25, 21)
 
-    switch(io.instruction(27).asBool()) {
+    // Read or write to address or address at reg location
+    io.regSelB := io.instruction(20, 16)
+    val address = io.instruction(15, 0)
+
+    // If we use reg, read the address we load or store from/to
+    // from the second register provided
+    io.dataMemoryAddress := Mux(use_reg, io.regB, address)
+
+    switch(op_type) {
       // LOAD
       is(0.B) {
         io.regWriteEnable := 1.B
-        io.regWriteSel := regsel
+        io.regWriteSel := firstRegSel
         io.regWriteData := io.dataMemoryReadData
       }
 
       // STORE
       is(1.B) {
-        io.regSelA := regsel
+        io.regSelA := firstRegSel
         io.dataMemoryWriteEnable := 1.B
         io.dataMemoryWriteData := io.regA
       }
@@ -203,7 +212,7 @@ class ControlUnit extends Module {
   }
 
   // HALT
-  when (io.instruction === "b00000000000000000000000000000001".U) {
+  when(io.instruction === "b00000000000000000000000000000001".U) {
     io.stop := 1.B
     io.done := 1.B
   }

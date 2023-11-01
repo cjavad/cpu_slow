@@ -1,31 +1,34 @@
 # cpu_slow
+
 Not a slow CPU
 
 set = 1*
 
-1dddddxxxxxxxxxxxxxxxxxxxxxxxxxx    set register = d, value = x
+1dddddxxxxxxxxxxxxxxxxxxxxxxxxxx set register = d, value = x
 
 alu = 01*
 
-01iiiiiidddddaaaaabbbbb--------    alu op = i, dest = dsource 1 = a, source 2 = b
-
+01iiiiiidddddaaaaabbbbb-------- alu op = i, dest = dsource 1 = a, source 2 = b
 
 jumps = 001*[f], register = d, address = x
 
 when f = 1, use register, when 0 use constant
 
-001001fddddd----xxxxxxxxxxxxxxxx    jmp equal
-001010fddddd----xxxxxxxxxxxxxxxx    jmp greater
-001100fddddd----xxxxxxxxxxxxxxxx    jmp less than
-001011fddddd----xxxxxxxxxxxxxxxx    jmp geater or equal
-001101fddddd----xxxxxxxxxxxxxxxx    jmp less than or equal
-001110fddddd----xxxxxxxxxxxxxxxx    jmp not equal
-001111fddddd----xxxxxxxxxxxxxxxx    jmp
+001001fddddd----xxxxxxxxxxxxxxxx jmp equal
+001010fddddd----xxxxxxxxxxxxxxxx jmp greater
+001100fddddd----xxxxxxxxxxxxxxxx jmp less than
+001011fddddd----xxxxxxxxxxxxxxxx jmp geater or equal
+001101fddddd----xxxxxxxxxxxxxxxx jmp less than or equal
+001110fddddd----xxxxxxxxxxxxxxxx jmp not equal
+001111fddddd----xxxxxxxxxxxxxxxx jmp
 
-load/store (ram) = 0001*, dest = d, address = x
+load/store (ram) = 0001*[f], dest = d, src = s, address = x
 
-00010ddddd------xxxxxxxxxxxxxxxx    load
-00011ddddd------xxxxxxxxxxxxxxxx    store
+src is used when f flag is set
+otherwise const address is used.
+
+00010fdddddsssssxxxxxxxxxxxxxxxx load
+00011fdddddsssssxxxxxxxxxxxxxxxx store
 
 test a
 
