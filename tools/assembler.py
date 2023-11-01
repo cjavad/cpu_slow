@@ -31,7 +31,6 @@ def is_register(val):
 
 def alu_op_to_bin(op_str: str):
     op_str = op_str.lower().removesuffix('u')
-
     
     ops = {
         'not': 0,
@@ -86,7 +85,7 @@ def assemble_instruction(instr: str, label_address_map) -> int:
     
     elif op.removesuffix('u') in ["not", "add", "sub", "and", "or", "xor", "mul", "div", "mod", "shl", "shr"]:
         signed_bit = 0 if 'u' in op else 1
-        return 1 << 30 | signed_bit << 29 | alu_op_to_bin(op) << 23 | reg_to_bin(tokens[1]) << 18 | reg_to_bin(tokens[2]) << 13 | reg_to_bin(tokens[3]) << 8
+        return 1 << 30 | signed_bit << 29 | alu_op_to_bin(op) << 24 | reg_to_bin(tokens[1]) << 19 | reg_to_bin(tokens[2]) << 14 | reg_to_bin(tokens[3]) << 9
     
     elif op in ["jmp", "je", "jne", "jg", "jl", "jge", "jle"]:
         jump_ops = {
@@ -137,7 +136,9 @@ def assemble_instruction(instr: str, label_address_map) -> int:
 
 # Test
 program = """
-SET r0 -0x69
+SET r0 5
+SET r1 10
+MUL r2 r0 r1
 HALT
 """.split("\n")
 
