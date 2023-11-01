@@ -153,7 +153,7 @@ class ControlUnit extends Module {
     /* RAM LOAD / STORE OPS  */
     val regsel = io.instruction(26, 22)
     val address = io.instruction(15, 0)
-    io.dataMemoryAddress := address
+    io.dataMe
 
     switch(io.instruction(27).asBool()) {
       // LOAD

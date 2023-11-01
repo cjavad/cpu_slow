@@ -3,9 +3,14 @@ import chisel3.iotesters.PeekPokeTester
 
 class ActualCPUTester(dut: CPUTop) extends PeekPokeTester(dut) {
   val program = Array(
-    3154116609L,
-    1148968448L,
-    1006632961L,
+    1006632964L,
+    3154116677L,
+    2147483648L,
+    1006632965L,
+    2147483658L,
+    2214592522L,
+    201392128L,
+    603979777L,
   )
 
   System.out.print("\nLoading the program memory with instructions... ")
