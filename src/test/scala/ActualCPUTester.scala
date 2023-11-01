@@ -3,19 +3,17 @@ import chisel3.iotesters.PeekPokeTester
 
 class ActualCPUTester(dut: CPUTop) extends PeekPokeTester(dut) {
   val program = Array(
-    1006632964L,
-    3154116677L,
-    2147483648L,
-    1006632965L,
-    2147483658L,
-    2214592522L,
-    201392128L,
-    603979777L,
+    2147483664L,
+    2214649517L,
+    1241530368L,
+    2214641391L,
+    1107296768L,
+    1L,
   )
 
   System.out.print("\nLoading the program memory with instructions... ")
 
-  for (address <- 0 to program.length - 1) {
+  for (address <- program.indices) {
     poke(dut.io.testerProgMemEnable, 1)
     poke(dut.io.testerProgMemWriteEnable, 1)
     poke(dut.io.testerProgMemAddress, address)
@@ -25,9 +23,17 @@ class ActualCPUTester(dut: CPUTop) extends PeekPokeTester(dut) {
   System.out.println("Done!")
 
   poke(dut.io.testerProgMemEnable, 0)
-  poke(dut.io.run, 1);
+  poke(dut.io.run, 1)
 
-  step(100)
+  var steps = 0
+  val maxSteps = 20000
+
+  while (0 == peek(dut.io.done)) {
+    steps += 1
+    step(1)
+  }
+
+  System.out.println("Stepped: " + steps + " times before halting or reaching beyond last instruction")
 }
 
 

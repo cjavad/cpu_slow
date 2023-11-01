@@ -5,7 +5,7 @@ class ControlUnit extends Module {
   val io = IO(new Bundle {
     val instruction = Input(UInt(32.W))
 
-    // / kill
+    // kill
     val done = Output(Bool())
 
     // Interface with program counter
@@ -45,8 +45,7 @@ class ControlUnit extends Module {
   // 3: LESS OR EQUAL
   // 4: GREATER OR EQUAL
 
-  private val flags = RegInit(VecInit(Seq.fill(5)(0.B)))
-
+  val flags = RegInit(VecInit(Seq.fill(5)(0.B)))
 
   // Default signals
   io.done := 0.B
@@ -99,9 +98,13 @@ class ControlUnit extends Module {
   }
 
   when(io.instruction(31, 29) === "b001".U) {
-    io.programCounterJump := io.instruction(15, 0)
+    val jump_kind = io.instruction(28, 26)
+    val use_reg = io.instruction(25).asBool()
 
-    switch(io.instruction(28, 26)) {
+    io.regSelB := io.instruction(24, 20)
+    io.programCounterJump := Mux(use_reg, io.regB, io.instruction(15, 0))
+
+    switch(jump_kind) {
       /* JUMP INSTRUCTIONS  */
 
       // JMP EQUAL
@@ -141,9 +144,6 @@ class ControlUnit extends Module {
     }
   }
 
-  // Same register selection for both rom and ram ops
-
-
   when(io.instruction(31, 28) === "b0001".U) {
     /* RAM LOAD / STORE OPS  */
     val regsel = io.instruction(26, 22)
@@ -179,6 +179,8 @@ class ControlUnit extends Module {
     switch(io.instruction(26).asBool()) {
       // TEST reg
       is(0.B) {
+        // Use OR as we want self as output
+        io.aluSel := 2.U
         io.regSelB := regsel1
         flags(0) := io.aluCompOut0(0)
         flags(1) := io.aluCompOut0(1)
@@ -200,4 +202,9 @@ class ControlUnit extends Module {
     }
   }
 
+  // HALT
+  when (io.instruction === "b00000000000000000000000000000001".U) {
+    io.stop := 1.B
+    io.done := 1.B
+  }
 }

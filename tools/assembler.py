@@ -1,8 +1,9 @@
-def assemble_instruction(instruction):
+def assemble_instruction(instruction: str):
     # Strip everything after ; (comments)
     instruction = instruction.split(";")[0].strip()
 
     tokens = instruction.split()
+
     tokens[0] = tokens[0].lower()
 
     if tokens[0] == "set":
@@ -27,9 +28,20 @@ def assemble_instruction(instruction):
             "jge": 3, "jle": 5, "jne": 6, "jmp": 7
         }
 
+        x = 0
+        reg = 0
+
+        if tokens[0].startswith("r"):
+            tokens[0] = tokens[0].removeprefix("r")
+            reg = int(tokens[1])
+        else:
+            x = int(tokens[1])
+
         cond = jump_map[tokens[0]]
-        x = int(tokens[1])
-        return (1 << 29) | (cond << 26) | x
+
+
+
+        return (1 << 29) | (cond << 26) | (bool(reg) << 25) | reg << 20 | x
 
     elif tokens[0] == "load":
         d = int(tokens[1])
@@ -52,6 +64,12 @@ def assemble_instruction(instruction):
 
         return (3 << 26) | (a << 21) | (b << 16)
 
+    elif tokens[0] == "halt":
+        return (1 << 0)
+
+    elif tokens[0] == "nop":
+        return (0 << 0)
+
     else:
         raise ValueError(f"Unknown instruction: {tokens[0]}")
 
@@ -62,14 +80,12 @@ def assemble_program(program):
 
 # Example usage:
 program = """
-JMP 4     ; Jump to the second SET
-SET 15 69 ; Set if cool
-SET 0 0   ; Set if not cool (to not run forever)
-JMP 5     ; Jump over the other reg 0 set
-SET 0 10
-SET 1 10
-CMP 0 1
-JE 1      ; Jump to the first SET
+SET 0 16 ; Set constants
+SET 1 57005
+ALU << 0 1 0
+SET 1 48879
+ALU | 0 0 1
+HALT
 """
 
 machine_code = assemble_program(program)
