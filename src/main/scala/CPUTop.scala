@@ -25,7 +25,7 @@ class CPUTop extends Module {
   val programMemory = Module(new ProgramMemory())
   val alu = Module(new ALU())
   val registerFile = Module(new RegisterFile())
-  val controlUnit = Module(new ControlUnit(registerFile, alu, dataMemory))
+  val controlUnit = Module(new ControlUnit())
 
   //Connecting the modules
   programCounter.io.run := io.run
@@ -34,14 +34,37 @@ class CPUTop extends Module {
   ////////////////////////////////////////////
   //Continue here with your connections
   ////////////////////////////////////////////
-
+  io.done := controlUnit.io.done
   controlUnit.io.instruction := programMemory.io.instructionRead
 
-  programCounter.io.run := controlUnit.io.run
+  // Program counter interface
   programCounter.io.stop := controlUnit.io.stop
   programCounter.io.jump := controlUnit.io.jump
-
   programCounter.io.programCounterJump := controlUnit.io.programCounterJump
+
+  // Interface with dataMemory
+  controlUnit.io.dataMemoryReadData := dataMemory.io.dataRead
+  dataMemory.io.address := controlUnit.io.dataMemoryAddress
+  dataMemory.io.dataWrite := controlUnit.io.dataMemoryWriteData
+  dataMemory.io.writeEnable := controlUnit.io.dataMemoryWriteEnable
+
+  // Interface with registerFile
+  controlUnit.io.regA := registerFile.io.out_a
+  controlUnit.io.regB := registerFile.io.out_b
+  registerFile.io.in_aSel := controlUnit.io.regSelA
+  registerFile.io.in_bSel := controlUnit.io.regSelB
+  registerFile.io.in_writeSel := controlUnit.io.regWriteSel
+  registerFile.io.in_writeData := controlUnit.io.regWriteData
+  registerFile.io.in_writeEnable := controlUnit.io.regWriteEnable
+
+  // Interface with ALU
+  alu.io.in_sel := controlUnit.io.aluSel
+  alu.io.in_op1 := controlUnit.io.aluInA
+  alu.io.in_op2 := controlUnit.io.aluInB
+
+  controlUnit.io.aluOut := alu.io.out_result
+  controlUnit.io.aluComp := alu.io.out_comp
+  controlUnit.io.aluCompOut0 := alu.io.out_result_comp_0
 
 
   //This signals are used by the tester for loading the program to the program memory, do not touch
