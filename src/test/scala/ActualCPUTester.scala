@@ -3,8 +3,9 @@ import chisel3.iotesters.PeekPokeTester
 
 class ActualCPUTester(dut: CPUTop) extends PeekPokeTester(dut) {
   val program = Array(
-    "b00000000000000000000000000000000".U,
-    "b00000000000000000000000000000000".U,
+    3154116609L,
+    1148968448L,
+    1006632961L,
   )
 
   System.out.print("\nLoading the program memory with instructions... ")
@@ -21,17 +22,17 @@ class ActualCPUTester(dut: CPUTop) extends PeekPokeTester(dut) {
   poke(dut.io.testerProgMemEnable, 0)
   poke(dut.io.run, 1);
 
-  step(program.length)
+  step(100)
 }
 
 
-object ActualCPUTester  {
+object ActualCPUTester {
   def main(args: Array[String]): Unit = {
     println("Testing CPU")
     iotesters.Driver.execute(
       Array("--generate-vcd-output", "on",
         "--target-dir", "generated",
-        "--top-name", "RegisterFile"),
+        "--top-name", "ActualCPUTester"),
       () => new CPUTop()) {
       c => new ActualCPUTester(c)
     }

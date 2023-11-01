@@ -36,7 +36,12 @@ class ControlUnit extends Module {
     val aluComp = Input(Vec(5, Bool()))
     val aluCompOut0 = Input(Vec(5, Bool()))
 
+    // Debug
+    val debugOutput = Output(UInt(32.W))
+
   })
+
+  io.debugOutput := io.instruction
 
   // FLAGS
   // 0: LESSER
@@ -45,7 +50,7 @@ class ControlUnit extends Module {
   // 3: LESS OR EQUAL
   // 4: GREATER OR EQUAL
 
-  val flags = RegInit(VecInit(Seq.fill(5)(0.B)))
+  private val flags = RegInit(VecInit(Seq.fill(5)(0.B)))
 
 
   // Default signals
@@ -66,27 +71,27 @@ class ControlUnit extends Module {
   io.regWriteEnable := 0.B
 
   io.aluSel := 0.U
-  io.aluInA := 0.U
-  io.aluInB := 0.U
+
+  // Always point register A and B from registerFile into ALU
+  io.aluInA := io.regA
+  io.aluInB := io.regB
 
   // SET instruction
   // 1dddddxxxxxxxxxxxxxxxxxxxxxxxxxx    set register = d, value = x
-  when(io.instruction(0) === 1.U) {
+  when(io.instruction(31) === 1.U) {
     io.regWriteEnable := 1.B
-    io.regWriteSel := io.instruction(5, 0)
-    io.regWriteData := io.instruction(31, 6)
+    io.regWriteSel := io.instruction(30, 26)
+    io.regWriteData := io.instruction(25, 0)
   }
 
-  when(io.instruction(1, 0) === "b01".U) {
+  when(io.instruction(31, 30) === "b01".U) {
     /* ALU INSTRUCTIONS */
-    io.aluSel := io.instruction(7, 2)
-    // TODO, always ALU on regA and regB?
-    io.aluInA := io.regA
-    io.aluInB := io.regB
+    io.aluSel := io.instruction(29, 24)
+    io.regWriteSel := io.instruction(23, 19)
 
-    io.regWriteSel := io.instruction(13, 8)
-    io.regSelA := io.instruction(19, 14)
-    io.regSelB := io.instruction(25, 20)
+    io.regWriteEnable := 1.B
+    io.regSelA := io.instruction(18, 14)
+    io.regSelB := io.instruction(13, 9)
 
     flags(0) := io.aluCompOut0(0)
     flags(1) := io.aluCompOut0(1)
@@ -98,43 +103,44 @@ class ControlUnit extends Module {
 
   }
 
-  when(io.instruction(2, 0) === "b001".U) {
-    io.programCounterJump := io.instruction(31, 16)
-    switch(io.instruction(6, 0)) {
+  when(io.instruction(31, 29) === "b001".U) {
+    io.programCounterJump := io.instruction(15, 0)
+
+    switch(io.instruction(28, 26)) {
       /* JUMP INSTRUCTIONS  */
 
       // JMP EQUAL
-      is("b001001".U) {
+      is("b001".U) {
         io.jump := flags(1)
       }
 
       // JMP GREATER
-      is("b001010".U) {
+      is("b010".U) {
         io.jump := flags(2)
       }
 
       // JMP LESS THAN
-      is("b001100".U) {
+      is("b100".U) {
         io.jump := flags(0)
       }
 
       // JMP GREATER OR EQUAL
-      is("b001011".U) {
+      is("b011".U) {
         io.jump := flags(4)
       }
 
       // JMP LESS THAN OR EQUAL
-      is("b001101".U) {
+      is("b101".U) {
         io.jump := flags(3)
       }
 
       // JMP NOT EQUAL
-      is("b001110".U) {
+      is("b110".U) {
         io.jump := ~flags(1)
       }
 
       // JMP MF
-      is("b001111".U) {
+      is("b111".U) {
         io.jump := 1.U
       }
     }
@@ -143,13 +149,13 @@ class ControlUnit extends Module {
   // Same register selection for both rom and ram ops
 
 
-  when(io.instruction(3, 0) === "b0001".U) {
+  when(io.instruction(31, 28) === "b0001".U) {
     /* RAM LOAD / STORE OPS  */
-    val regsel = io.instruction(9, 5)
-    val address = io.instruction(31, 15)
+    val regsel = io.instruction(26, 22)
+    val address = io.instruction(15, 0)
     io.dataMemoryAddress := address
 
-    switch(io.instruction(4).asBool()) {
+    switch(io.instruction(27).asBool()) {
       // LOAD
       is(0.B) {
         io.regWriteEnable := 1.B
@@ -166,22 +172,19 @@ class ControlUnit extends Module {
     }
   }
 
-  when(io.instruction(4, 0) === "b00001".U) {
+  when(io.instruction(31, 27) === "b00001".U) {
     /* TEST / CMP */
     // Get first register (required for both)
-    val regsel1 = io.instruction(12, 6)
+    val regsel1 = io.instruction(25, 21)
 
     // Read from that
     io.regSelA := regsel1
     io.regWriteEnable := 0.B
 
-    // First alu opt is first register
-    io.aluInA := io.regA
-
-    switch(io.instruction(5).asBool()) {
+    switch(io.instruction(26).asBool()) {
       // TEST reg
       is(0.B) {
-        io.aluInB := io.regA
+        io.regSelB := regsel1
         flags(0) := io.aluCompOut0(0)
         flags(1) := io.aluCompOut0(1)
         flags(2) := io.aluCompOut0(2)
@@ -192,9 +195,7 @@ class ControlUnit extends Module {
       // CMP reg, reg
       is(1.B) {
         // Second register
-        val regsel2 = io.instruction(18, 12)
-        io.regSelB := regsel2
-        io.aluInB := io.regB
+        io.regSelB := io.instruction(20, 16)
         flags(0) := io.aluComp(0)
         flags(1) := io.aluComp(1)
         flags(2) := io.aluComp(2)
