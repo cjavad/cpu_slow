@@ -35,13 +35,8 @@ class ControlUnit extends Module {
     val aluOut = Input(UInt(32.W))
     val aluComp = Input(Vec(5, Bool()))
     val aluCompOut0 = Input(Vec(5, Bool()))
-
     // Debug
-    val debugOutput = Output(UInt(32.W))
-
   })
-
-  io.debugOutput := io.instruction
 
   // FLAGS
   // 0: LESSER
@@ -153,7 +148,7 @@ class ControlUnit extends Module {
     /* RAM LOAD / STORE OPS  */
     val regsel = io.instruction(26, 22)
     val address = io.instruction(15, 0)
-    io.dataMe
+    io.dataMemoryAddress := address
 
     switch(io.instruction(27).asBool()) {
       // LOAD
