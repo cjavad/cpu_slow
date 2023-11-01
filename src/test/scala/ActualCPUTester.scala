@@ -32,6 +32,29 @@ class ActualCPUTester(dut: CPUTop) extends PeekPokeTester(dut) {
   }
 
   System.out.println("Stepped: " + steps + " times before halting or reaching beyond last instruction")
+
+  //Dump the data memory content
+  System.out.print("\nDump the data memory content... ")
+  val memory_buffer = new Array[Int](0x7FFF + 1)
+  for (i <- 0 to 0x7FFF) { //Location of the original image
+    poke(dut.io.testerDataMemEnable, 1)
+    poke(dut.io.testerDataMemWriteEnable, 0)
+    poke(dut.io.testerDataMemAddress, i)
+    val data = peek(dut.io.testerDataMemDataRead)
+    memory_buffer(i) = data.toInt
+    step(1)
+  }
+  poke(dut.io.testerDataMemEnable, 0)
+  System.out.println("Done! Dumped " + memory_buffer.length + " words of data memory")
+
+  // Output as hex
+  for (i <- 0 to 0x7FFF) {
+
+    if (i % 8 == 0) {
+      print("\n" + i.toHexString + ": ")
+    }
+    print(memory_buffer(i).toHexString + " ")
+  }
 }
 
 
