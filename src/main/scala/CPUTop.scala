@@ -23,17 +23,26 @@ class CPUTop extends Module {
   val programCounter = Module(new ProgramCounter())
   val dataMemory = Module(new DataMemory())
   val programMemory = Module(new ProgramMemory())
-  val registerFile = Module(new RegisterFile())
-  val controlUnit = Module(new ControlUnit())
   val alu = Module(new ALU())
+  val registerFile = Module(new RegisterFile())
+  val controlUnit = Module(new ControlUnit(registerFile, alu, dataMemory))
 
   //Connecting the modules
-  //programCounter.io.run := io.run
-  //programMemory.io.address := programCounter.io.programCounter
+  programCounter.io.run := io.run
+  programMemory.io.address := programCounter.io.programCounter
 
   ////////////////////////////////////////////
   //Continue here with your connections
   ////////////////////////////////////////////
+
+  controlUnit.io.instruction := programMemory.io.instructionRead
+
+  programCounter.io.run := controlUnit.io.run
+  programCounter.io.stop := controlUnit.io.stop
+  programCounter.io.jump := controlUnit.io.jump
+
+  programCounter.io.programCounterJump := controlUnit.io.programCounterJump
+
 
   //This signals are used by the tester for loading the program to the program memory, do not touch
   programMemory.io.testerAddress := io.testerProgMemAddress
