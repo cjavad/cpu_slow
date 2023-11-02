@@ -3,9 +3,14 @@ import chisel3.iotesters.PeekPokeTester
 
 class ActualCPUTester(dut: CPUTop) extends PeekPokeTester(dut) {
   val program = Array(
-    2147483653L,
-    2214592522L,
-    1209008640L,
+    4227858433L,
+    4160750568L,
+    2147483648L,
+    1006632964L,
+    1677737472L,
+    471728128L,
+    939524100L,
+    2281701481L,
     1L,
   )
 
@@ -35,8 +40,11 @@ class ActualCPUTester(dut: CPUTop) extends PeekPokeTester(dut) {
 
   //Dump the data memory content
   System.out.print("\nDump the data memory content... ")
-  val memory_buffer = new Array[Int](0x7FFF + 1)
-  for (i <- 0 to 0x7FFF) { //Location of the original image
+
+  val size = 100;
+
+  val memory_buffer = new Array[Int](size + 1)
+  for (i <- 0 to size) { //Location of the original image
     poke(dut.io.testerDataMemEnable, 1)
     poke(dut.io.testerDataMemWriteEnable, 0)
     poke(dut.io.testerDataMemAddress, i)
@@ -48,7 +56,7 @@ class ActualCPUTester(dut: CPUTop) extends PeekPokeTester(dut) {
   System.out.println("Done! Dumped " + memory_buffer.length + " words of data memory")
 
   // Output as hex
-  for (i <- 0 to 0x7FFF) {
+  for (i <- 0 to size) {
 
     if (i % 8 == 0) {
       print("\n" + i.toHexString + ": ")

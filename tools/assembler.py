@@ -79,6 +79,8 @@ def assemble_program(program) -> List[int]:
 def assemble_instruction(instr: str, label_address_map) -> int:
     tokens = instr.split()
     op = tokens[0].lower()
+
+    print(f"Processing: {instr}")
     
     if op == "set":
         return 1 << 31 | reg_to_bin(tokens[1]) << 26 | parse_literal(tokens[2], 26)
@@ -99,7 +101,7 @@ def assemble_instruction(instr: str, label_address_map) -> int:
         }
 
         op_code = jump_ops[op] << 26
-        flag_bit = 1 if is_register(tokens[1]) else 0
+        flag_bit = 1 if is_register(tokens[1]) and not tokens[1] in label_address_map else 0
         
         if flag_bit:  # If it's a register
             dest_reg = reg_to_bin(tokens[1]) << 20
@@ -136,10 +138,21 @@ def assemble_instruction(instr: str, label_address_map) -> int:
 
 # Test
 program = """
-SET r0 5
-SET r1 10
-MUL r2 r0 r1
-HALT
+; Setting up constants
+SET r31 1
+SET r30 1000
+SET r0 0
+
+JMP main
+
+; Entrypoint
+main:
+    ADD r0 r0 r31    
+    CMP r0 r30
+    JNE main
+end:
+    SET r2 0x69
+    HALT
 """.split("\n")
 
 machine_code = assemble_program(program)
