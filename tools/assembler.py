@@ -155,7 +155,7 @@ def assemble_instruction(instr: str, label_address_map) -> int:
         last_is_reg = is_register(tokens[2])
 
         if last_is_reg:
-            source2 = reg_to_bin(tokens[2]) << 15
+            source2 = reg_to_bin(tokens[2]) << 14
         else:
             # Compare immediate
             source2 = parse_literal(tokens[2], 19)
@@ -164,6 +164,9 @@ def assemble_instruction(instr: str, label_address_map) -> int:
 
     elif op == "halt":
         return 1
+
+    elif op == "nop":
+        return 0
 
     else:
         raise ValueError(f"Unknown instruction: {instr}")

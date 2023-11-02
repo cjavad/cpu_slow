@@ -39,7 +39,6 @@ class ControlUnit extends Module {
     val aluOutSigned = Input(SInt(32.W))
     val aluComp = Input(Vec(5, Bool()))
     val aluCompOut0 = Input(Vec(5, Bool()))
-    // Debug
   })
 
   val flags = RegInit(VecInit(Seq.fill(5)(0.B)))
@@ -102,9 +101,9 @@ class ControlUnit extends Module {
   flags(3) := Mux(is_alu_op | is_cmp_op, Mux(use_comp_0, io.aluCompOut0(3), io.aluComp(3)), flags(3))
   flags(4) := Mux(is_alu_op | is_cmp_op, Mux(use_comp_0, io.aluCompOut0(4), io.aluComp(4)), flags(4))
 
-  when(is_alu_op) {
-    /* ALU INSTRUCTIONS */
 
+  /* ALU INSTRUCTIONS */
+  when(is_alu_op) {
     val op_type = io.instruction(29, 26)
     val is_signed = io.instruction(25).asBool()
     val load_immediate = io.instruction(24).asBool()
@@ -130,6 +129,7 @@ class ControlUnit extends Module {
     io.regWriteData := Mux(is_signed, io.aluOutSigned.asUInt(), io.aluOut)
   }
 
+  /* JUMP INSTRUCTIONS  */
   when(io.instruction(31, 29) === "b001".U) {
     val jump_kind = io.instruction(28, 26)
     val use_reg = io.instruction(25).asBool()
@@ -140,7 +140,6 @@ class ControlUnit extends Module {
     io.programCounterJump := Mux(use_reg, io.regB, address)
 
     switch(jump_kind) {
-      /* JUMP INSTRUCTIONS  */
 
       // JMP EQUAL
       is("b001".U) {
@@ -179,8 +178,8 @@ class ControlUnit extends Module {
     }
   }
 
+  /* RAM LOAD / STORE INSTRUCTIONS */
   when(io.instruction(31, 28) === "b0001".U) {
-    /* RAM LOAD / STORE OPS */
     val op_type = io.instruction(27).asBool()
     val use_reg = io.instruction(26).asBool()
     // Load into, or store from.
@@ -211,8 +210,8 @@ class ControlUnit extends Module {
     }
   }
 
-  when(io.instruction(31, 27) === "b00001".U) {
-    /* TEST / CMP */
+  /* TEST / CMP INSTRUCTIONS */
+  when(is_cmp_op) {
     // Get first register (required for both)
     val op_type = io.instruction(26).asBool()
     val is_signed = io.instruction(25)
@@ -246,9 +245,11 @@ class ControlUnit extends Module {
     }
   }
 
-  // HALT
+  // HALT INSTRUCTION
   when(io.instruction === "b00000000000000000000000000000001".U) {
     io.stop := 1.B
     io.done := 1.B
   }
+
+  // NOP is 0x00000000
 }

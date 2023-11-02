@@ -1,5 +1,7 @@
 import chisel3._
 import chisel3.iotesters.PeekPokeTester
+import java.nio.file.{Files, Paths}
+
 
 class Runner(program: Array[Long], memory: Array[Long], dut: CPUTop) extends PeekPokeTester(dut) {
 
@@ -80,10 +82,17 @@ object Runner {
 
 
     // Load program as every 32 bits (binary file output not seperated by bytes)
-    // Use bufferedReader to read in binary file
-    val program = scala.io.Source.fromFile(args(0), "ISO-8859-1").map(_.toByte).grouped(4).map(_.toArray).toArray.map(_.map(_.toLong).reduceLeft(_ << 8 | _))
-    val memory = scala.io.Source.fromFile(args(1), "ISO-8859-1").map(_.toByte).grouped(4).map(_.toArray).toArray.map(_.map(_.toLong).reduceLeft(_ << 8 | _))
+    def readFileAsUnsignedInts(filename: String): Array[Long] = {
+      val byteArray = Files.readAllBytes(Paths.get(filename))
+      byteArray.grouped(4).map { group =>
+        group.foldLeft(0L)((acc, byte) => (acc << 8) | (byte & 0xFFL))
+      }.toArray
+    }
 
+    val program = readFileAsUnsignedInts(args(0))
+    val memory = readFileAsUnsignedInts(args(1))
+
+    println("Program: " + program.mkString(" "))
 
     iotesters.Driver.execute(
       Array("--generate-vcd-output", "on",

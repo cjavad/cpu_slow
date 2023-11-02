@@ -23,8 +23,6 @@ class ALU extends Module {
   io.out_result := 0.U
   io.out_result_signed := 0.S
 
-
-  //Implement this module here
   switch(io.in_sel) {
     is(0.U) {
       io.out_result := ~io.in_op1

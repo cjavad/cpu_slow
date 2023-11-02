@@ -34,6 +34,7 @@ class CPUTop extends Module {
   ////////////////////////////////////////////
   //Continue here with your connections
   ////////////////////////////////////////////
+
   io.done := controlUnit.io.done
   controlUnit.io.instruction := programMemory.io.instructionRead
 
