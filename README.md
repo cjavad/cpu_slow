@@ -2,6 +2,15 @@
 
 Not a slow CPU
 
+Use the `tools/assembler.py` to assemble a program (maybe from ./programs)
+
+Run `sbt test:runMain Runner out.bin mem.bin` to run the program
+it will run until halt or 20k steps, and dump the first 100 memory 
+locations out in hex.
+
+## ISA
+> TODO: clean this up
+
 set = 1*
 
 1dddddxxxxxxxxxxxxxxxxxxxxxxxxxx set register = d, value = x

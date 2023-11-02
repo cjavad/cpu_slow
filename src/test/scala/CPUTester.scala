@@ -1,7 +1,7 @@
 import chisel3._
 import chisel3.iotesters.PeekPokeTester
 
-class ActualCPUTester(dut: CPUTop) extends PeekPokeTester(dut) {
+class CPUTester(dut: CPUTop) extends PeekPokeTester(dut) {
   val program = Array(
     2164260863L,
     167772160L,
@@ -60,7 +60,7 @@ class ActualCPUTester(dut: CPUTop) extends PeekPokeTester(dut) {
 }
 
 
-object ActualCPUTester {
+object CPUTester {
   def main(args: Array[String]): Unit = {
     println("Testing CPU")
     iotesters.Driver.execute(
@@ -68,7 +68,7 @@ object ActualCPUTester {
         "--target-dir", "generated",
         "--top-name", "ActualCPUTester"),
       () => new CPUTop()) {
-      c => new ActualCPUTester(c)
+      c => new CPUTester(c)
     }
   }
 }

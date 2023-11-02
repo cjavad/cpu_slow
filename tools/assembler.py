@@ -1,3 +1,4 @@
+import sys
 from typing import List
 
 
@@ -25,7 +26,6 @@ def parse_literal(l: str, bit_size=26) -> int:
 
 def reg_to_bin(reg_str):
     return int(reg_str[1:])
-
 
 def is_register(val):
     """Check if the value represents a register."""
@@ -64,28 +64,34 @@ def assemble_program(program) -> List[int]:
 
     # First pass: Collect labels
     label_address_map = {}
+    memory_map = {}
+    instructions = []
+
     instruction_address = 0
+
     for line in program:
         if line.endswith(':'):
             label = line[:-1]
             label_address_map[label] = instruction_address
+        elif line.startswith('.'):
+            tokens = line.split()
+            memory_map[tokens[0][1:]] = parse_literal(tokens[1], 32)
         else:
+            instructions.append(line)
             instruction_address += 1
 
     # Second pass: Generate machine code
     machine_code = []
-    for instr in program:
-        if not instr.endswith(':'):  # Skip labels during second pass
-            machine_code.append(assemble_instruction(instr, label_address_map))
 
-    return machine_code
+    for instr in instructions:
+        machine_code.append(assemble_instruction(instr, label_address_map))
+
+    return machine_code, memory_map
 
 
 def assemble_instruction(instr: str, label_address_map) -> int:
     tokens = instr.split()
     op = tokens[0].lower()
-
-    print(f"Processing: {instr}")
 
     if op == "set":
         return 1 << 31 | reg_to_bin(tokens[1]) << 26 | parse_literal(tokens[2], 26)
@@ -163,13 +169,29 @@ def assemble_instruction(instr: str, label_address_map) -> int:
         raise ValueError(f"Unknown instruction: {instr}")
 
 
-# Test
-program = """
-SET r0 -0x1
-TESTU r0
-HALT
-""".split("\n")
 
-machine_code = assemble_program(program)
-for code in machine_code:
-    print(f"{code}L,")
+if __name__ == '__main__':
+    # Read file from first argument
+    args = sys.argv[1:]
+
+    if len(args) == 0:
+        print("Please specify a file to assemble!")
+        exit(1)
+
+    with open(args[0], 'r') as f:
+        program = f.readlines()
+
+
+    machine_code, memory_map = assemble_program(program)
+
+    # Output as 32-bit packed binary values to a binary file called "out.bin"
+
+    with open('out.bin', 'wb') as f:
+        for instr in machine_code:
+            f.write(instr.to_bytes(4, 'big'))
+
+    # Write memory map to a file called "mem.bin"
+    # Truncate the address, just add sequentially
+    with open('mem.bin', 'wb') as f:
+        for val in memory_map.values():
+            f.write(val.to_bytes(4, 'big'))
