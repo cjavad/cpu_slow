@@ -13,12 +13,12 @@ def parse_literal(l: str, bit_size=26) -> int:
 
     max_size = (1 << bit_size) - 1  # Maximum allowed size for the given bit length
 
-    if integer > max_size or integer < -max_size:
-        raise ValueError(f"Integer {integer} is out of range for {bit_size} bits!")
-
     # If the number is negative, convert to unsigned binary representation
     if integer < 0:
         integer = int.from_bytes(integer.to_bytes(bit_size // 8, 'big', signed=True), 'big', signed=False)
+
+    if integer > max_size or integer < -max_size:
+        raise ValueError(f"Integer {integer} is out of range for {bit_size} bits!")
 
     return integer
 
@@ -141,8 +141,8 @@ def assemble_instruction(instr: str, label_address_map) -> int:
         return op_code | flag_bit << 26 | dest_reg | addr_reg_or_const
 
     elif op in ["test", "testu"]:
-        signed_bit = 0 if 'u' in op else 1
-        return 2 << 28 | signed_bit << 26 | reg_to_bin(tokens[1]) << 20
+        signed_bit = 'u' in op
+        return 1 << 27 | signed_bit << 25 | reg_to_bin(tokens[1]) << 19
 
     elif op in ["cmp", "cmpu"]:
         signed_bit = 'u' in op
@@ -154,7 +154,7 @@ def assemble_instruction(instr: str, label_address_map) -> int:
             # Compare immediate
             source2 = parse_literal(tokens[2], 19)
 
-        return 3 << 27 | signed_bit << 26 | (not last_is_reg) << 25 | reg_to_bin(tokens[1]) << 20 | source2
+        return 3 << 26 | signed_bit << 25 | (not last_is_reg) << 24 | reg_to_bin(tokens[1]) << 19 | source2
 
     elif op == "halt":
         return 1
@@ -165,9 +165,8 @@ def assemble_instruction(instr: str, label_address_map) -> int:
 
 # Test
 program = """
-SET r1 0x1
-ADD r1 r1 16383
-STORE r1 0x0
+SET r0 -0x1
+TESTU r0
 HALT
 """.split("\n")
 

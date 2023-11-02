@@ -42,12 +42,6 @@ class ControlUnit extends Module {
     // Debug
   })
 
-  // FLAGS
-  // 0: LESSER
-  // 1: EQUAL
-  // 2: GREATER
-  // 3: LESS OR EQUAL
-  // 4: GREATER OR EQUAL
   val flags = RegInit(VecInit(Seq.fill(5)(0.B)))
 
   // Default signals
@@ -87,7 +81,28 @@ class ControlUnit extends Module {
     io.regWriteData := immediate
   }
 
-  when(io.instruction(31, 30) === "b01".U) {
+  /*
+  * CPU Flags, only update on alu or cmp instructions, only use compare with 0 for the TEST instruction
+  * otherwise use the previous value of the flag
+
+  * FLAGS:
+    // 0: LESSER
+    // 1: EQUAL
+    // 2: GREATER
+    // 3: LESS OR EQUAL
+    // 4: GREATER OR EQUAL
+  * */
+  val is_alu_op = io.instruction(31, 30) === "b01".U;
+  val is_cmp_op = io.instruction(31, 27) === "b00001".U
+  val use_comp_0 = is_cmp_op & (~io.instruction(28).asBool())
+
+  flags(0) := Mux(is_alu_op | is_cmp_op, Mux(use_comp_0, io.aluCompOut0(0), io.aluComp(0)), flags(0))
+  flags(1) := Mux(is_alu_op | is_cmp_op, Mux(use_comp_0, io.aluCompOut0(1), io.aluComp(1)), flags(1))
+  flags(2) := Mux(is_alu_op | is_cmp_op, Mux(use_comp_0, io.aluCompOut0(2), io.aluComp(2)), flags(2))
+  flags(3) := Mux(is_alu_op | is_cmp_op, Mux(use_comp_0, io.aluCompOut0(3), io.aluComp(3)), flags(3))
+  flags(4) := Mux(is_alu_op | is_cmp_op, Mux(use_comp_0, io.aluCompOut0(4), io.aluComp(4)), flags(4))
+
+  when(is_alu_op) {
     /* ALU INSTRUCTIONS */
 
     val op_type = io.instruction(29, 26)
@@ -111,12 +126,6 @@ class ControlUnit extends Module {
       io.aluInB := immediate
       io.aluInBSigned := immediate.asSInt()
     }
-
-    flags(0) := io.aluCompOut0(0)
-    flags(1) := io.aluCompOut0(1)
-    flags(2) := io.aluCompOut0(2)
-    flags(3) := io.aluCompOut0(3)
-    flags(4) := io.aluCompOut0(4)
 
     io.regWriteData := Mux(is_signed, io.aluOutSigned.asUInt(), io.aluOut)
   }
@@ -222,11 +231,6 @@ class ControlUnit extends Module {
         // Use OR as we want self as output
         io.aluSel := 2.U
         io.regSelB := source1
-        flags(0) := io.aluCompOut0(0)
-        flags(1) := io.aluCompOut0(1)
-        flags(2) := io.aluCompOut0(2)
-        flags(3) := io.aluCompOut0(3)
-        flags(4) := io.aluCompOut0(4)
       }
 
       // CMP reg, reg
@@ -238,12 +242,6 @@ class ControlUnit extends Module {
           io.aluInB := immediate
           io.aluInBSigned := immediate.asSInt()
         }
-
-        flags(0) := io.aluComp(0)
-        flags(1) := io.aluComp(1)
-        flags(2) := io.aluComp(2)
-        flags(3) := io.aluComp(3)
-        flags(4) := io.aluComp(4)
       }
     }
   }
