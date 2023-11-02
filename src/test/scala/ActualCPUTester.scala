@@ -3,14 +3,9 @@ import chisel3.iotesters.PeekPokeTester
 
 class ActualCPUTester(dut: CPUTop) extends PeekPokeTester(dut) {
   val program = Array(
-    4227858433L,
-    4160750568L,
-    2147483648L,
-    1006632964L,
-    1677737472L,
-    471728128L,
-    939524100L,
-    2281701481L,
+    2214592513L,
+    1359495177L,
+    404750336L,
     1L,
   )
 

@@ -6,9 +6,14 @@ set = 1*
 
 1dddddxxxxxxxxxxxxxxxxxxxxxxxxxx set register = d, value = x
 
-alu = 01*[s] (Signed is s is 1 otherwise unsigned)
+alu = 01*[s][I]
 
-01siiiiidddddaaaaabbbbb-------- alu op = i, dest = dsource 1 = a, source 2 = b
+(Signed is s is 1 otherwise unsigned)
+(Use b and i as immedidate value)
+
+alu op = t, dest = dsource 1 = a, source 2 = b, immediate = bi (14 bits)
+
+01ttttsIdddddaaaaabbbbbiiiiiiiii 
 
 jumps = 001*[f], register = d, address = x
 
@@ -32,11 +37,11 @@ otherwise const address is used.
 
 test a, is_signed = s
 
-000010sddddd---------------------
+000010s-ddddd-------------------
 
-cmp a, b, is_signed = s
+cmp a, b, is_signed = s, immediate= I, immediate value = bi (19 bit)
 
-000011saaaaabbbbb----------------
+000011sIaaaaabbbbbiiiiiiiiiiiiii
 
 halt
 

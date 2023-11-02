@@ -48,7 +48,6 @@ class ControlUnit extends Module {
   // 2: GREATER
   // 3: LESS OR EQUAL
   // 4: GREATER OR EQUAL
-
   val flags = RegInit(VecInit(Seq.fill(5)(0.B)))
 
   // Default signals
@@ -80,21 +79,38 @@ class ControlUnit extends Module {
   // SET instruction
   // 1dddddxxxxxxxxxxxxxxxxxxxxxxxxxx    set register = d, value = x
   when(io.instruction(31) === 1.U) {
+    val dest = io.instruction(30, 26)
+    val immediate = io.instruction(25, 0)
+
     io.regWriteEnable := 1.B
-    io.regWriteSel := io.instruction(30, 26)
-    io.regWriteData := io.instruction(25, 0)
+    io.regWriteSel := dest
+    io.regWriteData := immediate
   }
 
   when(io.instruction(31, 30) === "b01".U) {
     /* ALU INSTRUCTIONS */
-    val is_signed = io.instruction(29).asBool()
+
+    val op_type = io.instruction(29, 26)
+    val is_signed = io.instruction(25).asBool()
+    val load_immediate = io.instruction(24).asBool()
+    val dest = io.instruction(23, 19)
+    val source1 = io.instruction(18, 14)
+    val source2 = io.instruction(13, 9)
+    val immediate = io.instruction(13, 0)
+
     io.aluSigned := is_signed
-    io.aluSel := io.instruction(28, 24)
-    io.regWriteSel := io.instruction(23, 19)
+    io.aluSel := op_type
+    io.regWriteSel := dest
 
     io.regWriteEnable := 1.B
-    io.regSelA := io.instruction(18, 14)
-    io.regSelB := io.instruction(13, 9)
+    io.regSelA := source1
+    io.regSelB := source2
+
+    when(load_immediate) {
+      io.regSelB := 0.U
+      io.aluInB := immediate
+      io.aluInBSigned := immediate.asSInt()
+    }
 
     flags(0) := io.aluCompOut0(0)
     flags(1) := io.aluCompOut0(1)
@@ -108,9 +124,11 @@ class ControlUnit extends Module {
   when(io.instruction(31, 29) === "b001".U) {
     val jump_kind = io.instruction(28, 26)
     val use_reg = io.instruction(25).asBool()
+    val source1 = io.instruction(24, 20)
+    val address = io.instruction(15, 0)
 
-    io.regSelB := io.instruction(24, 20)
-    io.programCounterJump := Mux(use_reg, io.regB, io.instruction(15, 0))
+    io.regSelB := source1
+    io.programCounterJump := Mux(use_reg, io.regB, address)
 
     switch(jump_kind) {
       /* JUMP INSTRUCTIONS  */
@@ -157,7 +175,7 @@ class ControlUnit extends Module {
     val op_type = io.instruction(27).asBool()
     val use_reg = io.instruction(26).asBool()
     // Load into, or store from.
-    val firstRegSel = io.instruction(25, 21)
+    val source1 = io.instruction(25, 21)
 
     // Read or write to address or address at reg location
     io.regSelB := io.instruction(20, 16)
@@ -171,13 +189,13 @@ class ControlUnit extends Module {
       // LOAD
       is(0.B) {
         io.regWriteEnable := 1.B
-        io.regWriteSel := firstRegSel
+        io.regWriteSel := source1
         io.regWriteData := io.dataMemoryReadData
       }
 
       // STORE
       is(1.B) {
-        io.regSelA := firstRegSel
+        io.regSelA := source1
         io.dataMemoryWriteEnable := 1.B
         io.dataMemoryWriteData := io.regA
       }
@@ -187,21 +205,23 @@ class ControlUnit extends Module {
   when(io.instruction(31, 27) === "b00001".U) {
     /* TEST / CMP */
     // Get first register (required for both)
+    val op_type = io.instruction(26).asBool()
     val is_signed = io.instruction(25)
-    val regsel1 = io.instruction(24, 20)
+    val load_immediate = io.instruction(24).asBool()
+    val source1 = io.instruction(23, 19)
+    val source2 = io.instruction(18, 14)
+    val immediate = io.instruction(18, 0)
 
     io.aluSigned := is_signed
-
-    // Read from that
-    io.regSelA := regsel1
+    io.regSelA := source1
     io.regWriteEnable := 0.B
 
-    switch(io.instruction(26).asBool()) {
+    switch(op_type) {
       // TEST reg
       is(0.B) {
         // Use OR as we want self as output
         io.aluSel := 2.U
-        io.regSelB := regsel1
+        io.regSelB := source1
         flags(0) := io.aluCompOut0(0)
         flags(1) := io.aluCompOut0(1)
         flags(2) := io.aluCompOut0(2)
@@ -212,7 +232,13 @@ class ControlUnit extends Module {
       // CMP reg, reg
       is(1.B) {
         // Second register
-        io.regSelB := io.instruction(19, 15)
+        io.regSelB := source2
+
+        when(load_immediate) {
+          io.aluInB := immediate
+          io.aluInBSigned := immediate.asSInt()
+        }
+
         flags(0) := io.aluComp(0)
         flags(1) := io.aluComp(1)
         flags(2) := io.aluComp(2)

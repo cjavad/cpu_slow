@@ -1,12 +1,13 @@
 from typing import List
 
-def parse_literal(l: str, bit_size = 26) -> int:
+
+def parse_literal(l: str, bit_size=26) -> int:
     if '0x' in l:
-        integer = int(l.replace('0x',''), 16)
+        integer = int(l.replace('0x', ''), 16)
     elif '0b' in l:
-        integer = int(l.replace('0b',''), 2)
+        integer = int(l.replace('0b', ''), 2)
     elif '0o' in l:
-        integer = int(l.replace('0o',''), 8)
+        integer = int(l.replace('0o', ''), 8)
     else:
         integer = int(l)
 
@@ -25,13 +26,15 @@ def parse_literal(l: str, bit_size = 26) -> int:
 def reg_to_bin(reg_str):
     return int(reg_str[1:])
 
+
 def is_register(val):
     """Check if the value represents a register."""
     return val.startswith('r') or val.startswith('R')
 
+
 def alu_op_to_bin(op_str: str):
     op_str = op_str.lower().removesuffix('u')
-    
+
     ops = {
         'not': 0,
         'and': 1,
@@ -46,6 +49,7 @@ def alu_op_to_bin(op_str: str):
         'shl': 10
     }
     return ops[op_str]
+
 
 def assemble_program(program) -> List[int]:
     # Remove all comments and empty lines
@@ -76,19 +80,33 @@ def assemble_program(program) -> List[int]:
 
     return machine_code
 
+
 def assemble_instruction(instr: str, label_address_map) -> int:
     tokens = instr.split()
     op = tokens[0].lower()
 
     print(f"Processing: {instr}")
-    
+
     if op == "set":
         return 1 << 31 | reg_to_bin(tokens[1]) << 26 | parse_literal(tokens[2], 26)
-    
+
     elif op.removesuffix('u') in ["not", "add", "sub", "and", "or", "xor", "mul", "div", "mod", "shl", "shr"]:
-        signed_bit = 0 if 'u' in op else 1
-        return 1 << 30 | signed_bit << 29 | alu_op_to_bin(op) << 24 | reg_to_bin(tokens[1]) << 19 | reg_to_bin(tokens[2]) << 14 | reg_to_bin(tokens[3]) << 9
-    
+        signed_bit = 'u' in op
+        last_is_reg = is_register(tokens[3])
+
+        # Add immediate
+        if last_is_reg:
+            source2 = reg_to_bin(tokens[3]) << 9
+        else:
+            source2 = parse_literal(tokens[3], 19)
+
+        print(f"{last_is_reg=} {tokens=}")
+        print(f"{signed_bit=}")
+
+        return 1 << 30 | alu_op_to_bin(op) << 26 | signed_bit << 25 | (not last_is_reg) << 24 | reg_to_bin(
+            tokens[1]) << 19 | reg_to_bin(
+            tokens[2]) << 14 | source2
+
     elif op in ["jmp", "je", "jne", "jg", "jl", "jge", "jle"]:
         jump_ops = {
             "jmp": 7,
@@ -102,11 +120,11 @@ def assemble_instruction(instr: str, label_address_map) -> int:
 
         op_code = jump_ops[op] << 26
         flag_bit = 1 if is_register(tokens[1]) and not tokens[1] in label_address_map else 0
-        
+
         if flag_bit:  # If it's a register
             dest_reg = reg_to_bin(tokens[1]) << 20
-            address = 0        
-        else:  
+            address = 0
+        else:
             dest_reg = 0
             if tokens[1] in label_address_map:  # If it's a label
                 address = label_address_map[tokens[1]]
@@ -124,35 +142,33 @@ def assemble_instruction(instr: str, label_address_map) -> int:
 
     elif op in ["test", "testu"]:
         signed_bit = 0 if 'u' in op else 1
-        return 2 << 28 | signed_bit << 26 | reg_to_bin(tokens[1]) << 21
-    
+        return 2 << 28 | signed_bit << 26 | reg_to_bin(tokens[1]) << 20
+
     elif op in ["cmp", "cmpu"]:
-        signed_bit = 0 if 'u' in op else 1
-        return 3 << 27 | signed_bit << 26 | reg_to_bin(tokens[1]) << 21 | reg_to_bin(tokens[2]) << 16
-    
+        signed_bit = 'u' in op
+        last_is_reg = is_register(tokens[2])
+
+        if last_is_reg:
+            source2 = reg_to_bin(tokens[2]) << 15
+        else:
+            # Compare immediate
+            source2 = parse_literal(tokens[2], 14)
+
+        return 3 << 27 | signed_bit << 26 | (not last_is_reg) << 25 | reg_to_bin(tokens[1]) << 20 | source2
+
     elif op == "halt":
         return 1
-    
+
     else:
         raise ValueError(f"Unknown instruction: {instr}")
 
+
 # Test
 program = """
-; Setting up constants
-SET r31 1
-SET r30 1000
-SET r0 0
-
-JMP main
-
-; Entrypoint
-main:
-    ADD r0 r0 r31    
-    CMP r0 r30
-    JNE main
-end:
-    SET r2 0x69
-    HALT
+SET r1 0x1
+ADD r1 r1 0x9
+STORE r1 0x0
+HALT
 """.split("\n")
 
 machine_code = assemble_program(program)
