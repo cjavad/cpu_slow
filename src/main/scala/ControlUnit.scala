@@ -94,7 +94,7 @@ class ControlUnit extends Module {
   * */
   val is_alu_op = io.instruction(31, 30) === "b01".U;
   val is_cmp_op = io.instruction(31, 27) === "b00001".U
-  val use_comp_0 = is_cmp_op & (~io.instruction(28).asBool())
+  val use_comp_0 = is_cmp_op & (~io.instruction(26).asBool())
 
   flags(0) := Mux(is_alu_op | is_cmp_op, Mux(use_comp_0, io.aluCompOut0(0), io.aluComp(0)), flags(0))
   flags(1) := Mux(is_alu_op | is_cmp_op, Mux(use_comp_0, io.aluCompOut0(1), io.aluComp(1)), flags(1))
