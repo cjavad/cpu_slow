@@ -98,7 +98,7 @@ def assemble_instruction(instr: str, label_address_map) -> int:
         if last_is_reg:
             source2 = reg_to_bin(tokens[3]) << 9
         else:
-            source2 = parse_literal(tokens[3], 19)
+            source2 = parse_literal(tokens[3], 14)
 
         print(f"{last_is_reg=} {tokens=}")
         print(f"{signed_bit=}")
@@ -152,7 +152,7 @@ def assemble_instruction(instr: str, label_address_map) -> int:
             source2 = reg_to_bin(tokens[2]) << 15
         else:
             # Compare immediate
-            source2 = parse_literal(tokens[2], 14)
+            source2 = parse_literal(tokens[2], 19)
 
         return 3 << 27 | signed_bit << 26 | (not last_is_reg) << 25 | reg_to_bin(tokens[1]) << 20 | source2
 
@@ -166,7 +166,7 @@ def assemble_instruction(instr: str, label_address_map) -> int:
 # Test
 program = """
 SET r1 0x1
-ADD r1 r1 0x9
+ADD r1 r1 16383
 STORE r1 0x0
 HALT
 """.split("\n")
