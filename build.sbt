@@ -8,3 +8,5 @@ resolvers ++= Seq(
 )
 
 libraryDependencies += "edu.berkeley.cs" %% "chisel-iotesters" % "1.4.2"
+
+Test / run / mainClass := Some("Runner")

@@ -11,3 +11,4 @@ generated/
 project/
 .bsp
 *.bin
+test_run_dir

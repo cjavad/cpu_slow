@@ -3,7 +3,13 @@ import chisel3.iotesters.PeekPokeTester
 import java.nio.file.{Files, Paths}
 
 
-class Runner(program: Array[Long], memory: Array[Long], dut: CPUTop) extends PeekPokeTester(dut) {
+class Runner(
+  program: Array[Long],
+  memory: Array[Long],
+  outputSectionStart: Long,
+  outputSectionEnd: Long, 
+  dut: CPUTop  
+) extends PeekPokeTester(dut) {
 
   System.out.print("\nLoading program and memory... ")
 
@@ -44,62 +50,84 @@ class Runner(program: Array[Long], memory: Array[Long], dut: CPUTop) extends Pee
   //Dump the data memory content
   System.out.print("\nDump the data memory content... ")
 
-  val size = 100;
+  val size = outputSectionEnd - outputSectionStart;
 
   val memory_buffer = new Array[Int](size + 1)
 
-  for (i <- 0 to size) { //Location of the original image
+  for (i <- outputSectionStart to outputSectionEnd) {
+    if (i % 8 == 0) {
+      print("\n" + i.toHexString + ": ")
+    }
+
     poke(dut.io.testerDataMemEnable, 1)
     poke(dut.io.testerDataMemWriteEnable, 0)
     poke(dut.io.testerDataMemAddress, i)
     val data = peek(dut.io.testerDataMemDataRead)
     memory_buffer(i) = data.toInt
+    print(memory_buffer(i).toHexString + " ")
     step(1)
   }
 
   poke(dut.io.testerDataMemEnable, 0)
-  System.out.println("Done! Dumped " + memory_buffer.length + " words of data memory")
 
-  // Output as hex
-  for (i <- 0 to size) {
-
-    if (i % 8 == 0) {
-      print("\n" + i.toHexString + ": ")
-    }
-    print(memory_buffer(i).toHexString + " ")
-  }
-
+  // Dump memory as base64
+  val base64 = java.util.Base64.getEncoder.encodeToString(memory_buffer.map(_.toByte))
+  System.out.println("\n\nBase64 encoded memory: " + base64)
 }
-
 
 object Runner {
   def main(args: Array[String]): Unit = {
     // Parse args to generate program and memory
     if (args.length < 2) {
-      println("Usage: sbt \"runMain Runner <path to program> <path to memory?>\"")
+      println("Usage: sbt \"test:run <path to program> <path to memory?>\"")
+      println("Or   : sbt \"test:run <base64 encoded program> <base64 encoded memory?>\"")
       return
     }
 
-
-    // Load program as every 32 bits (binary file output not seperated by bytes)
-    def readFileAsUnsignedInts(filename: String): Array[Long] = {
-      val byteArray = Files.readAllBytes(Paths.get(filename))
-      byteArray.grouped(4).map { group =>
+    def asUnsignedInts(bytes: Array[Byte]): Array[Long] = {
+      bytes.grouped(4).map { group =>
         group.foldLeft(0L)((acc, byte) => (acc << 8) | (byte & 0xFFL))
       }.toArray
     }
 
-    val program = readFileAsUnsignedInts(args(0))
-    val memory = readFileAsUnsignedInts(args(1))
+    // Load program as every 32 bits (binary file output not seperated by bytes)
+    def readFileAsUnsignedInts(filename: String): Array[Long] = {
+      asUnsignedInts(Files.readAllBytes(Paths.get(filename)))
+    }
 
-    println("Program: " + program.mkString(" "))
+    def convertBase64ToUnsignedInts(base64: String): Array[Long] = {
+      asUnsignedInts(java.util.Base64.getDecoder.decode(base64))
+    }
+
+    // Check if file exists
+    val isBase64 = !args(0).contains(".")
+
+    val program = if (isBase64) {
+      convertBase64ToUnsignedInts(args(0))
+    } else {
+      readFileAsUnsignedInts(args(0))
+    }
+
+    val memory = if (args.length > 1) {
+      if (isBase64) {
+        convertBase64ToUnsignedInts(args(1))
+      } else {
+        readFileAsUnsignedInts(args(1))
+      }
+    } else {
+      Array.fill(10)(0L)
+    }
+
 
     iotesters.Driver.execute(
-      Array("--generate-vcd-output", "on",
-        "--target-dir", "generated",
-        "--top-name", "Runner"),
+      Array(),
       () => new CPUTop()) {
-      c => new Runner(program, memory, c)
+      c => new Runner(
+        program,
+        memory,
+        0,
+        100, 
+        c)
     }
   }
 }

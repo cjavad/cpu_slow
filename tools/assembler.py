@@ -2,7 +2,7 @@ import sys
 from typing import List
 
 
-def parse_literal(l: str, bit_size=26) -> int:
+def parse_literal(l: str, bit_size=26, signed=False) -> int:
     if '0x' in l:
         integer = int(l.replace('0x', ''), 16)
     elif '0b' in l:
@@ -12,13 +12,22 @@ def parse_literal(l: str, bit_size=26) -> int:
     else:
         integer = int(l)
 
-    max_size = (1 << bit_size) - 1  # Maximum allowed size for the given bit length
+    if signed:
+        max_size = (1 << (bit_size - 1)) - 1  # Maximum allowed size for the given bit length
+        min_size = -(1 << (bit_size - 1))
+    else:
+        max_size = (1 << bit_size) - 1  # Maximum allowed size for the given bit length
+        min_size = 0
 
     # If the number is negative, convert to unsigned binary representation
-    if integer < 0:
-        integer = int.from_bytes(integer.to_bytes(bit_size // 8, 'big', signed=True), 'big', signed=False)
+    if integer < 0 and not signed:
+        integer = (1 << bit_size) + integer
 
-    if integer > max_size or integer < -max_size:
+    if signed:
+        # Sign extend to bit_size
+        integer = (integer + (1 << bit_size)) % (1 << bit_size)
+
+    if integer < min_size or integer > max_size:
         raise ValueError(f"Integer {integer} is out of range for {bit_size} bits!")
 
     return integer
@@ -104,10 +113,7 @@ def assemble_instruction(instr: str, label_address_map) -> int:
         if last_is_reg:
             source2 = reg_to_bin(tokens[3]) << 9
         else:
-            source2 = parse_literal(tokens[3], 14)
-
-        print(f"{last_is_reg=} {tokens=}")
-        print(f"{signed_bit=}")
+            source2 = parse_literal(tokens[3], 14, signed_bit)
 
         return 1 << 30 | alu_op_to_bin(op) << 26 | signed_bit << 25 | (not last_is_reg) << 24 | reg_to_bin(
             tokens[1]) << 19 | reg_to_bin(
@@ -158,7 +164,7 @@ def assemble_instruction(instr: str, label_address_map) -> int:
             source2 = reg_to_bin(tokens[2]) << 14
         else:
             # Compare immediate
-            source2 = parse_literal(tokens[2], 19)
+            source2 = parse_literal(tokens[2], 19, signed_bit)
 
         return 3 << 26 | signed_bit << 25 | (not last_is_reg) << 24 | reg_to_bin(tokens[1]) << 19 | source2
 

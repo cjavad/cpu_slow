@@ -1,4 +1,4 @@
-.memory_label 0xFFFFFFFF
 SET r0 0x0
-LOAD r1 r0
+ADDU r0 r0 -10
+STORE r0 0x0
 HALT
