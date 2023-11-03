@@ -1,4 +1,5 @@
 import sys
+import subprocess
 from typing import List
 
 
@@ -193,14 +194,28 @@ if __name__ == '__main__':
 
     machine_code, memory_map = assemble_program(program)
 
-    # Output as 32-bit packed binary values to a binary file called "out.bin"
+    # Output as hex vectors
 
-    with open('out.bin', 'wb') as f:
+    with open('out.hex', 'wb') as f:
         for instr in machine_code:
-            f.write(instr.to_bytes(4, 'big'))
+            f.write(f"{instr:08x} ".encode('utf-8'))
 
     # Write memory map to a file called "mem.bin"
     # Truncate the address, just add sequentially
-    with open('mem.bin', 'wb') as f:
+    with open('mem.hex', 'wb') as f:
         for val in memory_map.values():
-            f.write(val.to_bytes(4, 'big'))
+            f.write(f"{val:08x} ".encode('utf-8'))
+
+    # Build with iverilog flags
+    PROG_MAX = len(machine_code) - 1
+    DATA_MAX = len(memory_map) - 1
+
+    subprocess.Popen([
+        "iverilog",
+        "-o", "simulate.vvp",
+        '-DVCD',
+        "-D", f"PROG_MAX={PROG_MAX}",
+        "-D", f"DATA_MAX={DATA_MAX}",
+        "../generated/CPUTop.v",
+        "simulate.v",        
+    ]).wait()
