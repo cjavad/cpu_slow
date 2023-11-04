@@ -193,6 +193,15 @@ if __name__ == '__main__':
 
 
     machine_code, memory_map = assemble_program(program)
+    memory = list(memory_map.values())
+
+    # Fill up to 2**16 instructions with NOP
+    for _ in range(2**16 - len(machine_code)):
+        machine_code.append(0)
+
+    # Fill up to 2**16 memory locations with 0
+    for _ in range(2**16 - len(memory)):
+        memory.append(0)
 
     # Output as hex vectors
 
@@ -203,19 +212,13 @@ if __name__ == '__main__':
     # Write memory map to a file called "mem.bin"
     # Truncate the address, just add sequentially
     with open('mem.hex', 'wb') as f:
-        for val in memory_map.values():
+        for val in memory:
             f.write(f"{val:08x} ".encode('utf-8'))
 
-    # Build with iverilog flags
-    PROG_MAX = len(machine_code) - 1
-    DATA_MAX = len(memory_map) - 1
 
     subprocess.Popen([
         "iverilog",
         "-o", "simulate.vvp",
-        '-DVCD',
-        "-D", f"PROG_MAX={PROG_MAX}",
-        "-D", f"DATA_MAX={DATA_MAX}",
         "../generated/CPUTop.v",
         "simulate.v",        
     ]).wait()

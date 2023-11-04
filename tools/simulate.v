@@ -2,26 +2,8 @@
 // SBT is quite slow, so this speeds things up a lot!
 
 module CPUTop_tb;
-
-
     `ifndef STEP_MAX
         `define STEP_MAX 20000  // Default value if not passed from command line
-    `endif
-
-    `ifndef PROG_MAX
-        `define PROG_MAX 65535  // Default value if not passed from command line
-    `endif
-
-    `ifndef DATA_MAX
-        `define DATA_MAX 65535  // Default value if not passed from command line
-    `endif
-
-    `ifndef DATA_READ_START
-        `define DATA_READ_START 0
-    `endif
-
-    `ifndef DATA_READ_END
-        `define DATA_READ_END 9
     `endif
 
     integer outfile; // File handle for output file
@@ -31,10 +13,6 @@ module CPUTop_tb;
     parameter T  = TH * 2;
 
     reg [15:0] i;  // 16-bit loop counter
-
-    // Declare input memory
-    reg [31:0] prog_mem [0:`PROG_MAX];
-    reg [31:0] data_mem [0:`DATA_MAX];
 
     // Declare the signals
     reg clock;
@@ -83,32 +61,8 @@ module CPUTop_tb;
         reset = 1;
         #T reset = 0;
         
-        $readmemh("out.hex", prog_mem);
-        $readmemh("mem.hex", data_mem);
-
-        // Load data into Program Memory similarly...
-        io_testerProgMemEnable = 1;
-        io_testerProgMemWriteEnable = 1;
-        
-        // Loop over the program memory
-        for (i = 0; i < `PROG_MAX; i = i + 1) begin
-            // Print i
-            io_testerProgMemAddress = i;
-            io_testerProgMemDataWrite = prog_mem[i];
-            #T;
-        end
-
-        // Load data into Data Memory
-        io_testerDataMemEnable = 1;
-        io_testerDataMemWriteEnable = 1;
-
-        // Loop over the data memory
-        for (i = 0; i < `DATA_MAX; i = i + 1) begin
-            // Print i
-            io_testerDataMemAddress = i;
-            io_testerDataMemDataWrite = data_mem[i];
-            #T;
-        end
+        $readmemh("out.hex", uut.programMemory.memory);
+        $readmemh("mem.hex", uut.dataMemory.memory);
 
         $display("Starting test...");
 
@@ -125,17 +79,7 @@ module CPUTop_tb;
         // Wait for the test to finish
         wait_for_done_or_max();
 
-        // Read the data memory
-        io_testerDataMemEnable = 1;
-        outfile = $fopen("mem_out.hex", "w");
-
-        for (i = `DATA_READ_START; i < `DATA_READ_END; i = i + 1) begin
-            io_testerDataMemAddress = i;
-            #T;
-            $fwrite(outfile, "%h\n", io_testerDataMemDataRead);
-        end
-
-        $fclose(outfile);
+        $writememh("mem_out.hex", uut.dataMemory.memory);
 
         // Optionally, finish the test
         $finish;
