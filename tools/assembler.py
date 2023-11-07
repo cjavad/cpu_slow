@@ -99,8 +99,9 @@ def assemble_program(program) -> List[int]:
     for instr in instructions:
         try:
             machine_code.append(assemble_instruction(instr, label_address_map))
-        except:
+        except Exception as e:
             print("Error on line :: " + instr)
+            raise e
 
     return machine_code, memory_map
 
@@ -199,37 +200,21 @@ if __name__ == '__main__':
 
 
     machine_code, memory_map = assemble_program(program)
-    memory = list(memory_map.values())
-   
+
     with open('program.txt', 'wb') as f:
         for instr in machine_code:
             f.write(f"\"h{instr:08x}\".U(32.W),\n".encode('utf-8'))
 
     # Fill up to 2**16 instructions with NOP
-    for _ in range(2**16 - len(machine_code)):
-        machine_code.append(0)
-
-    # Fill up to 2**16 memory locations with 0
-    for _ in range(2**16 - len(memory)):
-        memory.append(0)
+    machine_code.extend([0] * (2**16 - len(machine_code)))
 
     # Output as hex vectors
-
-    with open('out.hex', 'wb') as f:
+    with open('in.hex', 'wb') as f:
         for instr in machine_code:
-            f.write(f"{instr:08x} ".encode('utf-8'))
+            f.write(f"{instr:08x}\n".encode('utf-8'))
 
     # Write memory map to a file called "mem.bin"
     # Truncate the address, just add sequentially
-    with open('mem.hex', 'wb') as f:
-        for val in memory:
-            f.write(f"{val:08x} ".encode('utf-8'))
-
-
-
-    subprocess.Popen([
-        "iverilog",
-        "-o", "simulate.vvp",
-        "../generated/CPUTop.v",
-        "simulate.v",        
-    ]).wait()
+    # with open('mem.hex', 'wb') as f:
+    #    for val in memory:
+    #        f.write(f"{val:08x}\n".encode('utf-8'))

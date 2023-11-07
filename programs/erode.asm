@@ -16,7 +16,6 @@
 ; ARG4 in R6
 ; R7-R14 scratch
 
-
 SYS_INIT:
 	SET R0 800
 
@@ -106,7 +105,7 @@ MAIN:
 				ADD R2 R17 R16
 				; 0xffffff00 mask 
 				SET R3 0xff
-				NOT R3 R3
+				NOT R3 R3 R3
 				; load output value
 				LOAD R1 R2
 				; mask out byte
