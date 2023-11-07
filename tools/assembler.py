@@ -200,6 +200,10 @@ if __name__ == '__main__':
 
     machine_code, memory_map = assemble_program(program)
     memory = list(memory_map.values())
+   
+    with open('program.txt', 'wb') as f:
+        for instr in machine_code:
+            f.write(f"\"h{instr:08x}\".U(32.W),\n".encode('utf-8'))
 
     # Fill up to 2**16 instructions with NOP
     for _ in range(2**16 - len(machine_code)):
@@ -220,6 +224,7 @@ if __name__ == '__main__':
     with open('mem.hex', 'wb') as f:
         for val in memory:
             f.write(f"{val:08x} ".encode('utf-8'))
+
 
 
     subprocess.Popen([

@@ -89,14 +89,30 @@ MAIN:
 				TEST R2
 				JE ERODE
 
-			; no 0 neighbors, do nothing
+			; no 0 neighbors, write 1
+				; base + x 
+				ADD R2 R17 R16
+				; load output value
+				LOAD R1 R2
+				; set byte
+				OR R1 R1 0xff
+				; output image address
+				STORE R1 R2
+
 			JMP LOOP_X_END
 
 			ERODE:
-				; [base + x] = 0
+				; base + x
 				ADD R2 R17 R16
-				XOR R1 R1 R1
-				STORE R1 R16
+				; 0xffffff00 mask 
+				SET R3 0xff
+				NOT R3 R3
+				; load output value
+				LOAD R1 R2
+				; mask out byte
+				AND R1 R1 R4
+				; output image address
+				STORE R1 R2
 
 			LOOP_X_END:
 				ADD R16 R16 1
@@ -136,6 +152,9 @@ GET_PIXEL:
 
 	; return pixel at R7
 	LOAD R2 R7
+	; extract byte
+	AND R2 R2 0xff
+	; return 
 	JMP R1
 
 	GET_PIXEL_FAIL:
