@@ -64,8 +64,10 @@ module CPUTop_tb;
 
 
     initial begin
-        $dumpfile("debug.vcd");
-        $dumpvars(0, CPUTop_tb);
+        `ifdef DEBUG
+            $dumpfile("debug.vcd");
+            $dumpvars(0, CPUTop_tb);
+        `endif
 
         $readmemh("in.hex", uut.programMemory.memory);
         $readmemh("mem.hex", uut.dataMemory.memory);
@@ -87,7 +89,7 @@ module CPUTop_tb;
 
     always @(posedge clock) begin
         // print pc
-        $display("PC: %d", uut.programCounter.io_programCounter);
+        // $display("PC: %d", uut.programCounter.io_programCounter);
 
         // Increment the counter each clock cycle
         i = i + 1;
@@ -125,7 +127,7 @@ module CPUTop_tb;
         end
         
         if (uut.programCounter.io_jump) begin
-            $display("Jump to %d from %d with offset %d with priv %d", uut.programCounter.io_programCounterJump, uut.programCounter.io_programCounter, programMemoryOffset, privileged);
+            // $display("Jump to %d from %d with offset %d with priv %d", uut.programCounter.io_programCounterJump, uut.programCounter.io_programCounter, programMemoryOffset, privileged);
 
             if (!privileged && uut.programCounter.io_programCounterJump <= `RING_0 && uut.programCounter.io_programCounterJump != `RING_0_ENTRYPOINT) begin
                 $display("Jump to unprivileged address %d", uut.programCounter.io_programCounterJump);
