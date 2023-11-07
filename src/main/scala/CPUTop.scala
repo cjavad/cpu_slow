@@ -5,6 +5,10 @@ class CPUTop extends Module {
   val io = IO(new Bundle {
     val done = Output(Bool())
     val run = Input(Bool())
+
+    val programMemoryOffset = Input(UInt(16.W))
+    val dataMemoryOffset = Input(UInt(16.W))
+
     //This signals are used by the tester for loading and dumping the memory content, do not touch
     val testerDataMemEnable = Input(Bool())
     val testerDataMemAddress = Input(UInt(16.W))
@@ -41,11 +45,11 @@ class CPUTop extends Module {
   // Program counter interface
   programCounter.io.stop := controlUnit.io.stop
   programCounter.io.jump := controlUnit.io.jump
-  programCounter.io.programCounterJump := controlUnit.io.programCounterJump
+  programCounter.io.programCounterJump := controlUnit.io.programCounterJump + io.programMemoryOffset
 
   // Interface with dataMemory
   controlUnit.io.dataMemoryReadData := dataMemory.io.dataRead
-  dataMemory.io.address := controlUnit.io.dataMemoryAddress
+  dataMemory.io.address := controlUnit.io.dataMemoryAddress + io.dataMemoryOffset
   dataMemory.io.dataWrite := controlUnit.io.dataMemoryWriteData
   dataMemory.io.writeEnable := controlUnit.io.dataMemoryWriteEnable
 
