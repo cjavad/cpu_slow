@@ -3,15 +3,18 @@ import subprocess
 from typing import List
 
 
-def parse_literal(l: str, bit_size=26, signed=False) -> int:
-    if '0x' in l:
-        integer = int(l.replace('0x', ''), 16)
-    elif '0b' in l:
-        integer = int(l.replace('0b', ''), 2)
-    elif '0o' in l:
-        integer = int(l.replace('0o', ''), 8)
-    else:
-        integer = int(l)
+def parse_literal(l: str, bit_size=26, signed=False, lam=None) -> int:
+    try:
+        if '0x' in l:
+            integer = int(l.replace('0x', ''), 16)
+        elif '0b' in l:
+            integer = int(l.replace('0b', ''), 2)
+        elif '0o' in l:
+            integer = int(l.replace('0o', ''), 8)
+        else:
+            integer = int(l)
+    except:
+        integer = lam[l]
 
     if signed:
         max_size = (1 << (bit_size - 1)) - 1  # Maximum allowed size for the given bit length
@@ -85,7 +88,7 @@ def assemble_program(program) -> List[int]:
             label_address_map[label] = instruction_address
         elif line.startswith('.'):
             tokens = line.split()
-            memory_map[tokens[0][1:]] = parse_literal(tokens[1], 32)
+            memory_map[tokens[0][1:]] = parse_literal(tokens[1], 32, lam=label_address_map)
         else:
             instructions.append(line)
             instruction_address += 1
@@ -94,7 +97,10 @@ def assemble_program(program) -> List[int]:
     machine_code = []
 
     for instr in instructions:
-        machine_code.append(assemble_instruction(instr, label_address_map))
+        try:
+            machine_code.append(assemble_instruction(instr, label_address_map))
+        except:
+            print("Error on line :: " + instr)
 
     return machine_code, memory_map
 
@@ -104,7 +110,7 @@ def assemble_instruction(instr: str, label_address_map) -> int:
     op = tokens[0].lower()
 
     if op == "set":
-        return 1 << 31 | reg_to_bin(tokens[1]) << 26 | parse_literal(tokens[2], 26)
+        return 1 << 31 | reg_to_bin(tokens[1]) << 26 | parse_literal(tokens[2], 26, lam=label_address_map)
 
     elif op.removesuffix('u') in ["not", "add", "sub", "and", "or", "xor", "mul", "div", "mod", "shl", "shr"]:
         signed_bit = 'u' in op
@@ -114,7 +120,7 @@ def assemble_instruction(instr: str, label_address_map) -> int:
         if last_is_reg:
             source2 = reg_to_bin(tokens[3]) << 9
         else:
-            source2 = parse_literal(tokens[3], 14, signed_bit)
+            source2 = parse_literal(tokens[3], 14, signed_bit, lam=label_address_map)
 
         return 1 << 30 | alu_op_to_bin(op) << 26 | signed_bit << 25 | (not last_is_reg) << 24 | reg_to_bin(
             tokens[1]) << 19 | reg_to_bin(
@@ -142,7 +148,7 @@ def assemble_instruction(instr: str, label_address_map) -> int:
             if tokens[1] in label_address_map:  # If it's a label
                 address = label_address_map[tokens[1]]
             else:  # If it's a constant
-                address = parse_literal(tokens[1], 16)
+                address = parse_literal(tokens[1], 16, lam=label_address_map)
 
         return 1 << 29 | op_code | flag_bit << 25 | dest_reg | address
 
@@ -150,7 +156,7 @@ def assemble_instruction(instr: str, label_address_map) -> int:
         op_code = 1 << 28 if op == 'load' else 3 << 27
         dest_reg = reg_to_bin(tokens[1]) << 21
         flag_bit = 1 if is_register(tokens[2]) else 0
-        addr_reg_or_const = reg_to_bin(tokens[2]) << 16 if flag_bit else parse_literal(tokens[2], 16)
+        addr_reg_or_const = reg_to_bin(tokens[2], ) << 16 if flag_bit else parse_literal(tokens[2], 16, lam=label_address_map)
         return op_code | flag_bit << 26 | dest_reg | addr_reg_or_const
 
     elif op in ["test", "testu"]:
@@ -165,7 +171,7 @@ def assemble_instruction(instr: str, label_address_map) -> int:
             source2 = reg_to_bin(tokens[2]) << 14
         else:
             # Compare immediate
-            source2 = parse_literal(tokens[2], 19, signed_bit)
+            source2 = parse_literal(tokens[2], 19, signed_bit, lam=label_address_map)
 
         return 3 << 26 | signed_bit << 25 | (not last_is_reg) << 24 | reg_to_bin(tokens[1]) << 19 | source2
 
