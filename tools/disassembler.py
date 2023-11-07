@@ -1,8 +1,12 @@
 def disassemble_instruction(instr: int) -> str:
     # Use bit masks and shifts to extract information from instruction
 
+    if instr & (1 << 31):
+        reg = (instr >> 26) & 0x1F
+        val = instr & ((1 << 26) - 1)
+        return f"set r{reg} {val}"
     # Check if it's an ALU operation (second highest bit set)
-    if instr & (1 << 30):
+    elif instr & (1 << 30):
         op_code = (instr >> 26) & 0xF
         signed_bit = (instr >> 25) & 1
         immediate = (instr >> 24) & 1
@@ -20,11 +24,10 @@ def disassemble_instruction(instr: int) -> str:
 
     # Check if it's a jump instruction (third highest bit set)
     elif instr & (1 << 29):
-        jump_ops = ["jmp", "je", "jne", "jg", "jl", "jge", "jle"]
+        jump_ops = ["", "je", "jg", "jge", "jl", "jle", "jne", "jmp"]
         op_code = (instr >> 26) & 0x7
         flag_bit = (instr >> 25) & 1
         dest_reg_or_const = instr & ((1 << 26) - 1)
-
         if flag_bit:
             return f"{jump_ops[op_code]} r{dest_reg_or_const >> 20}"
         else:
@@ -42,10 +45,7 @@ def disassemble_instruction(instr: int) -> str:
         else:
             return f"{'load' if is_load else 'store'} r{dest_reg} {addr_reg_or_const}"
 
-    elif instr & (1 << 31):
-        reg = (instr >> 26) & 0x1F
-        val = instr & ((1 << 26) - 1)
-        return f"set r{reg} {val}"
+
 
     elif (instr >> 26) == 3:
         signed_bit = (instr >> 25) & 1
@@ -81,17 +81,19 @@ def disassemble_instruction(instr: int) -> str:
         return f"UNKNOWN INSTRUCTION: {instr}"
 
 
-def disassemble_program(binary_data: bytes):
+def disassemble_program(instr_list):
+    print(instr_list)
     # Convert the binary data into a list of integers
-    instr_list = [int.from_bytes(binary_data[i:i+4], 'big') for i in range(0, len(binary_data), 4)]
-
     # Disassemble each instruction
     return [(instr, disassemble_instruction(instr)) for instr in instr_list]
 
 
 if __name__ == '__main__':
-    with open('out.bin', 'rb') as f:
-        binary_data = f.read()
+    with open('in.hex', 'r') as f:
+        binary_data = f.readlines()
+    
+    binary_data = [int(x, 16) for x in binary_data if x]
+    binary_data = [x for x in binary_data if x > 0]
 
     disassembled_program = disassemble_program(binary_data)
 
