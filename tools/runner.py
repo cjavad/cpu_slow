@@ -4,7 +4,7 @@ import subprocess
 image = [
     [*([random.choice([0, 255]) for _ in range(400)])], # Random image
     [*([0]*400)], # All black
-    [*([1]*400)], # All white
+    [*([255]*400)], # All white
     [
         0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,
         0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,

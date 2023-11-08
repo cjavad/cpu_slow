@@ -12,7 +12,7 @@ class CPUTopTester(dut: CPUTop) extends PeekPokeTester(dut) {
   System.out.print("\nLoading the data memory with image data... ")
   //Uncomment one of the following line depending on the image you want to load to the data memory
   //var image = Images.blackImage
-  // var image = Images.whiteImage
+  //var image = Images.whiteImage
   //var image = Images.cellsImage
   var image = Images.borderCellsImage
   for( address <- 0 to image.length-1){
@@ -48,7 +48,7 @@ class CPUTopTester(dut: CPUTop) extends PeekPokeTester(dut) {
   //Start the CPU
   poke(dut.io.run, 1)
   var running = true
-  var maxInstructions = 20000
+  var maxInstructions = 100000
   var instructionsCounter = maxInstructions
   while(running) {
     System.out.print("\rRunning cycle: " + (maxInstructions - instructionsCounter))
