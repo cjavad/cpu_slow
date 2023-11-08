@@ -91,18 +91,18 @@ LOOP_Y_END:
 ; r2 - ret value
 ; r6, r5 (x, y)
 GET_PIXEL:
-;    ; x < 0, return 0
-;	CMP r6 0
-;	JL GET_PIXEL_FAIL
-;	; x >= 20, return 0
-;	CMP r6 20
-;	JGE GET_PIXEL_FAIL
-;	; y < 0, return 0
-;	CMP r5 0 
-;	JL GET_PIXEL_FAIL
-;	; y >= 20, return 0
-;	CMP r5 20
-;	JGE GET_PIXEL_FAIL
+    ; x < 0, return 0
+	CMP r6 0
+	JL GET_PIXEL_FAIL
+	; x >= 20, return 0
+	CMP r6 20
+	JGE GET_PIXEL_FAIL
+	; y < 0, return 0
+	CMP r5 0 
+	JL GET_PIXEL_FAIL
+	; y >= 20, return 0
+	CMP r5 20
+	JGE GET_PIXEL_FAIL
 
     ; Base y * 20 + x
     MUL r20 r5 20
@@ -110,6 +110,6 @@ GET_PIXEL:
     LOAD r2 r20
     JMP r1 ; ret
 
-;    GET_PIXEL_FAIL:
-;		SET r2 0 ; Set ret as 0
-;		JMP r1   ; Jump to ret address
+    GET_PIXEL_FAIL:
+		SET r2 0 ; Set ret as 0
+		JMP r1   ; Jump to ret address

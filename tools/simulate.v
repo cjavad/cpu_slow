@@ -64,9 +64,6 @@ module CPUTop_tb;
 
 
     initial begin
-        $dumpfile("debug.vcd");
-        $dumpvars(0, CPUTop_tb);
- 
         $readmemh("in.hex", uut.programMemory.memory);
         $readmemh("mem.hex", uut.dataMemory.memory);
 
